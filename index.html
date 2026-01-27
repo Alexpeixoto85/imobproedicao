@@ -3381,21 +3381,12 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
         phoneNumber = '55' + phoneNumber;
     }
     
-    // Verificar se é dispositivo iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    
     // Preparar a mensagem
     const message = await Utils.generateWhatsAppMessage(cliente, imovel);
     const encodedMessage = encodeURIComponent(message);
     
-    // URL específica para iOS
-    if (isIOS) {
-        // Para iOS, usar o esquema de URL do WhatsApp
-        return `whatsapp://send?phone=${phoneNumber}&text=${encodedMessage}`;
-    } else {
-        // Para Android e outros dispositivos
-        return `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-    }
+    // Retornar URL para WhatsApp Web (usará mesma aba)
+    return `https://web.whatsapp.com/send?phone=${phoneNumber}&text=${encodedMessage}`;
 },
             
             extractVideoId: (url) => {
@@ -5908,13 +5899,30 @@ toggleVisitaFields: () => {
             // Verificar se ainda estamos na mesma página (app não abriu)
             if (document.hasFocus()) {
                 const webUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-                window.open(webUrl, '_blank');
+                // Usar window.location.href para usar a mesma aba
+                window.location.href = webUrl;
             }
         }, 500);
     } else {
         // Para outros dispositivos
-        const webUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-        window.open(webUrl, '_blank');
+        // Primeiro tentar abrir o WhatsApp Web na mesma aba
+        const webUrl = `https://web.whatsapp.com/send?phone=${phoneNumber}&text=${encodedMessage}`;
+        
+        // Verificar se já temos uma janela do WhatsApp aberta
+        let whatsappWindow = window.open('', '_blank');
+        
+        // Tenta carregar o WhatsApp Web
+        try {
+            whatsappWindow.location.href = webUrl;
+            
+            // Foca na janela existente
+            if (whatsappWindow) {
+                whatsappWindow.focus();
+            }
+        } catch (e) {
+            // Se houver erro (por exemplo, bloqueio de popup), abre na mesma aba
+            window.location.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+        }
     }
 },
                 
