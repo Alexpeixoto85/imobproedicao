@@ -1985,18 +1985,19 @@
             <form id="form-visita" onsubmit="App.agenda.save(event)">
                 <input type="hidden" id="v-id">
                 
-                <div class="form-group">
-                    <label class="form-label">Tipo de Agendamento</label>
-                    <select id="v-tipo" class="form-control" required onchange="UI.toggleVisitaFields()">
-                        <option value="visita">Visita ao Imóvel</option>
-                        <option value="reuniao-construtor">Reunião com Construtor</option>
-                        <option value="reuniao-equipe">Reunião de Equipe</option>
-                        <option value="documentacao">Assinatura de Documentos</option>
-                        <option value="plantao">Plantão</option>
-                        <option value="generico">Agendamento Genérico</option>
-                        <option value="outro">Outro</option>
-                    </select>
-                </div>
+                <select id="v-tipo" class="form-control" required onchange="UI.toggleVisitaFields()">
+    <option value="ligacao">📞 Ligação Telefônica</option>
+    <option value="whatsapp">💬 WhatsApp</option>
+    <option value="reuniao">👥 Reunião</option>
+    <option value="visita">🏠 Visita ao Imóvel</option>
+    <option value="reuniao-construtor">🏗️ Reunião com Construtor</option>
+    <option value="reuniao-equipe">👨‍💼 Reunião de Equipe</option>
+    <option value="documentacao">📄 Assinatura de Documentos</option>
+    <option value="plantao">📋 Plantão</option>
+    <option value="generico">📅 Agendamento Genérico</option>
+    <option value="outro">🔧 Outro</option>
+</select>
+
 
                 <div class="form-group cliente-dependent-group">
                     <label class="form-label">Cliente</label>
@@ -2029,6 +2030,61 @@
                         <input type="text" id="v-local-visita" class="form-control" placeholder="Endereço da visita">
                     </div>
                 </div>
+                <!-- Grupo Ligação Telefônica -->
+<div class="tipo-specific-group" id="grupo-ligacao" style="display: none;">
+    <div class="form-group">
+        <label class="form-label">Número para Ligação</label>
+        <input type="tel" id="v-ligacao-numero" class="form-control" placeholder="(00) 00000-0000" oninput="Utils.maskPhone(this)">
+    </div>
+    <div class="form-group">
+        <label class="form-label">Assunto da Ligação</label>
+        <input type="text" id="v-ligacao-assunto" class="form-control" placeholder="Ex: Retorno sobre financiamento, negociação, etc.">
+    </div>
+    <div class="form-group">
+        <label class="form-label">Preparação/Anotações</label>
+        <textarea id="v-ligacao-preparacao" class="form-control" placeholder="Pontos importantes para abordar na ligação..."></textarea>
+    </div>
+</div>
+
+<!-- Grupo WhatsApp -->
+<div class="tipo-specific-group" id="grupo-whatsapp" style="display: none;">
+    <div class="form-group">
+        <label class="form-label">Número do WhatsApp</label>
+        <input type="tel" id="v-whatsapp-numero" class="form-control" placeholder="(00) 00000-0000" oninput="Utils.maskPhone(this)">
+    </div>
+    <div class="form-group">
+        <label class="form-label">Assunto da Conversa</label>
+        <input type="text" id="v-whatsapp-assunto" class="form-control" placeholder="Ex: Envio de proposta, esclarecimento de dúvidas, etc.">
+    </div>
+    <div class="form-group">
+        <label class="form-label">Conteúdo/Arquivos para Enviar</label>
+        <textarea id="v-whatsapp-conteudo" class="form-control" placeholder="Descreva o que será enviado ou discutido..."></textarea>
+    </div>
+    <div class="form-group">
+        <label class="form-label">Link/Arquivo para Compartilhar</label>
+        <input type="text" id="v-whatsapp-link" class="form-control" placeholder="https://... ou nome do arquivo">
+    </div>
+</div>
+
+<!-- Grupo Reunião (genérico) -->
+<div class="tipo-specific-group" id="grupo-reuniao" style="display: none;">
+    <div class="form-group">
+        <label class="form-label">Título da Reunião</label>
+        <input type="text" id="v-reuniao-titulo" class="form-control" placeholder="Ex: Alinhamento comercial, apresentação de proposta, etc.">
+    </div>
+    <div class="form-group">
+        <label class="form-label">Local da Reunião</label>
+        <input type="text" id="v-reuniao-local" class="form-control" placeholder="Ex: Escritório, café, online (Zoom/Teams), etc.">
+    </div>
+    <div class="form-group">
+        <label class="form-label">Participantes</label>
+        <input type="text" id="v-reuniao-participantes" class="form-control" placeholder="Nomes dos participantes">
+    </div>
+    <div class="form-group">
+        <label class="form-label">Pauta/Assuntos</label>
+        <textarea id="v-reuniao-pauta" class="form-control" placeholder="Tópicos a serem discutidos na reunião..."></textarea>
+    </div>
+</div>
 
                 <div class="tipo-specific-group" id="grupo-reuniao-construtor" style="display: none;">
                     <div class="form-group">
@@ -5593,43 +5649,44 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 
                 UI.toggleVisitaFields();
                 
+                
                 UI.openModal('visita');
             },
 
-            toggleVisitaFields: () => {
-                const tipoSelect = document.getElementById('v-tipo');
-                if (!tipoSelect) return;
-                
-                const tipo = tipoSelect.value;
-                
-                document.querySelectorAll('.tipo-specific-group').forEach(group => {
-                    group.style.display = 'none';
-                });
-                
-                const grupoId = `grupo-${tipo}`;
-                const grupoEspecifico = document.getElementById(grupoId);
-                if(grupoEspecifico) {
-                    grupoEspecifico.style.display = 'block';
-                }
-                
-                const tiposComCliente = ['visita', 'documentacao'];
-                const tiposComImovel = ['visita'];
-                
-                document.querySelectorAll('.cliente-dependent-group').forEach(el => {
-                    el.style.display = tiposComCliente.includes(tipo) ? 'block' : 'none';
-                });
-                
-                document.querySelectorAll('.imovel-dependent-group').forEach(el => {
-                    el.style.display = tiposComImovel.includes(tipo) ? 'block' : 'none';
-                });
-                
-                const clienteField = document.getElementById('v-cliente');
-                const imovelField = document.getElementById('v-imovel');
-                
-                if (clienteField) clienteField.required = tiposComCliente.includes(tipo);
-                if (imovelField) imovelField.required = tiposComImovel.includes(tipo);
-            },
-
+toggleVisitaFields: () => {
+    const tipoSelect = document.getElementById('v-tipo');
+    if (!tipoSelect) return;
+    
+    const tipo = tipoSelect.value;
+    
+    document.querySelectorAll('.tipo-specific-group').forEach(group => {
+        group.style.display = 'none';
+    });
+    
+    const grupoId = `grupo-${tipo}`;
+    const grupoEspecifico = document.getElementById(grupoId);
+    if(grupoEspecifico) {
+        grupoEspecifico.style.display = 'block';
+    }
+    
+    // Definir quais tipos precisam de cliente e imóvel
+    const tiposComCliente = ['ligacao', 'whatsapp', 'reuniao', 'visita', 'documentacao'];
+    const tiposComImovel = ['visita']; // Apenas visita precisa de imóvel
+    
+    document.querySelectorAll('.cliente-dependent-group').forEach(el => {
+        el.style.display = tiposComCliente.includes(tipo) ? 'block' : 'none';
+    });
+    
+    document.querySelectorAll('.imovel-dependent-group').forEach(el => {
+        el.style.display = tiposComImovel.includes(tipo) ? 'block' : 'none';
+    });
+    
+    const clienteField = document.getElementById('v-cliente');
+    const imovelField = document.getElementById('v-imovel');
+    
+    if (clienteField) clienteField.required = tiposComCliente.includes(tipo);
+    if (imovelField) imovelField.required = tiposComImovel.includes(tipo);
+},
             openNewVisitaFromImovel: (imovelId) => {
                 UI.openNewVisita();
                 setTimeout(() => {
