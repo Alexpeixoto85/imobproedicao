@@ -1633,7 +1633,6 @@
                 <div class="filter-chip reuniao-equipe" data-type="reuniao-equipe" onclick="UI.filterAgenda('reuniao-equipe')">👨‍💼 Equipe</div>
                 <div class="filter-chip documentacao" data-type="documentacao" onclick="UI.filterAgenda('documentacao')">📄 Documentação</div>
                 <div class="filter-chip plantao" data-type="plantao" onclick="UI.filterAgenda('plantao')">📋 Plantões</div>
-                <div class="filter-chip generico" data-type="generico" onclick="UI.filterAgenda('generico')">📅 Genéricos</div>
                 <div class="filter-chip outro" data-type="outro" onclick="UI.filterAgenda('outro')">🔧 Outros</div>
                 </div>                
                 <div id="agenda-list"></div>
@@ -2016,7 +2015,6 @@
     <option value="reuniao-equipe">👨‍💼 Reunião de Equipe</option>
     <option value="documentacao">📄 Assinatura de Documentos</option>
     <option value="plantao">📋 Plantão</option>
-    <option value="generico">📅 Agendamento Genérico</option>
     <option value="outro">🔧 Outro</option>
 </select>
 
@@ -2087,13 +2085,6 @@
         <input type="text" id="v-whatsapp-link" class="form-control" placeholder="https://... ou nome do arquivo">
     </div>
 </div>
-
-<!-- Grupo Reunião (genérico) -->
-<div class="tipo-specific-group" id="grupo-reuniao" style="display: none;">
-    <div class="form-group">
-        <label class="form-label">Título da Reunião</label>
-        <input type="text" id="v-reuniao-titulo" class="form-control" placeholder="Ex: Alinhamento comercial, apresentação de proposta, etc.">
-    </div>
     <div class="form-group">
         <label class="form-label">Local da Reunião</label>
         <input type="text" id="v-reuniao-local" class="form-control" placeholder="Ex: Escritório, café, online (Zoom/Teams), etc.">
@@ -2181,21 +2172,6 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                     <div class="form-group">
                         <label class="form-label">Negócios Gerados</label>
                         <input type="text" id="v-negocios-gerados" class="form-control" placeholder="Ex: 2 visitas agendadas, 1 proposta enviada">
-                    </div>
-                </div>
-
-                <div class="tipo-specific-group" id="grupo-generico" style="display: none;">
-                    <div class="form-group">
-                        <label class="form-label">Título do Agendamento</label>
-                        <input type="text" id="v-generico-titulo" class="form-control" placeholder="Título descritivo">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Local</label>
-                        <input type="text" id="v-generico-local" class="form-control" placeholder="Local do compromisso">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Descrição Detalhada</label>
-                        <textarea id="v-generico-descricao" class="form-control" placeholder="Descreva o propósito deste agendamento..."></textarea>
                     </div>
                 </div>
 
@@ -2903,7 +2879,6 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
         'reuniao-equipe': '👨‍💼 Reunião de Equipe',
         'documentacao': '📄 Assinatura de Documentos',
         'plantao': '📋 Plantão',
-        'generico': '📅 Agendamento Genérico',
         'outro': '🔧 Outro'
     };
     return tipos[tipo] || tipo;
@@ -4112,8 +4087,7 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                     additionalInfo = `<div class="schedule-notes">Com: ${v.construtorNome}</div>`;
                 } else if(v.tipo === 'reuniao-equipe' && v.equipeTipo) {
                     additionalInfo = `<div class="schedule-notes">${v.equipeTipo}</div>`;
-                } else if(v.tipo === 'generico' && v.genericoTitulo) {
-                    additionalInfo = `<div class="schedule-notes">${v.genericoTitulo}</div>`;
+               
                 }
                 
                 return `
@@ -4948,7 +4922,7 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 });
                 
                 const visitasPorTipo = {};
-                const tipos = ['visita', 'reuniao-construtor', 'reuniao-equipe', 'documentacao', 'plantao', 'generico', 'outro'];
+                const tipos = ['visita', 'reuniao-construtor', 'reuniao-equipe', 'documentacao', 'plantao', 'outro'];
                 
                 tipos.forEach(tipo => {
                     visitasPorTipo[tipo] = visitasFiltradas.filter(v => v.tipo === tipo);
@@ -6358,10 +6332,6 @@ toggleVisitaFields: () => {
                             newVisita.detalhesPlantoes = document.getElementById('v-detalhes-plantoes').value;
                             newVisita.clientesAtendidos = document.getElementById('v-clientes-atendidos').value;
                             newVisita.negociosGerados = document.getElementById('v-negocios-gerados').value;
-                        } else if (tipo === 'generico') {
-                            newVisita.genericoTitulo = document.getElementById('v-generico-titulo').value;
-                            newVisita.genericoLocal = document.getElementById('v-generico-local').value;
-                            newVisita.genericoDescricao = document.getElementById('v-generico-descricao').value;
                         } else if (tipo === 'outro') {
                             newVisita.outroDescricao = document.getElementById('v-outro-descricao').value;
                             newVisita.outroDetalhes = document.getElementById('v-outro-detalhes').value;
