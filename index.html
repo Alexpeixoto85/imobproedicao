@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -1731,6 +1729,7 @@
                         <option value="clientes">Relatório de Clientes</option>
                         <option value="agendamentos">Relatório de Agendamentos</option>
                         <option value="vendas">Relatório de Vendas</option>
+                        <option value="vendas-funil">Relatório de Vendas pelo Funil</option>
                         <option value="performance">Performance</option>
                         <option value="plantao">Relatório de Plantão (Diário)</option> </select>
                 </div>
@@ -3196,6 +3195,7 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                         case 'clientes': reportTitle += "CLIENTES"; break;
                         case 'agendamentos': reportTitle += "AGENDAMENTOS"; break;
                         case 'vendas': reportTitle += "VENDAS"; break;
+                        case 'vendas-funil': reportTitle += "VENDAS PELO FUNIL"; break;
                         case 'performance': reportTitle += "PERFORMANCE"; break;
                         default: reportTitle += "GERAL";
                     }
@@ -3610,44 +3610,44 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 const mesAtual = hojeObj.getMonth();
                 const anoAtual = hojeObj.getFullYear();
                 
-// NOVO CÁLCULO DE VENDAS BASEADO NO FUNIL
-const vendasFunilMes = UI.data.clientes.filter(cliente => {
-    // Verifica se está na etapa "venda"
-    if (cliente.etapaFunil !== 'venda') return false;
-    
-    // Verifica se tem data de entrada no funil
-    if (!cliente.dataEntradaFunil) return false;
-    
-    // Verifica se foi movido para "venda" neste mês
-    const dataEntradaVenda = new Date(cliente.dataEntradaFunil);
-    return dataEntradaVenda.getMonth() === mesAtual && 
-           dataEntradaVenda.getFullYear() === anoAtual;
-});
-
-// Para cada cliente que vendeu, buscar o imóvel associado
-let totalVendas = 0;
-vendasFunilMes.forEach(cliente => {
-    if (cliente.imovelInteresseId) {
-        const imovel = UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId);
-        if (imovel && imovel.precoVenda) {
-            totalVendas += imovel.precoVenda;
-        }
-    }
-});
-
-// Também manter as vendas tradicionais por segurança
-const vendasImoveisMes = imoveis.filter(i => {
-    if (!i.dataVenda) return false;
-    const dataVenda = new Date(i.dataVenda);
-    return dataVenda.getMonth() === mesAtual && 
-           dataVenda.getFullYear() === anoAtual && 
-           i.status === 'vendido';
-});
-
-const totalVendasImoveis = vendasImoveisMes.reduce((acc, i) => acc + (i.precoVenda || 0), 0);
-
-// Somar ambos os totais
-totalVendas += totalVendasImoveis;
+                // NOVO CÁLCULO DE VENDAS BASEADO NO FUNIL
+                const vendasFunilMes = UI.data.clientes.filter(cliente => {
+                    // Verifica se está na etapa "venda"
+                    if (cliente.etapaFunil !== 'venda') return false;
+                    
+                    // Verifica se tem data de entrada no funil
+                    if (!cliente.dataEntradaFunil) return false;
+                    
+                    // Verifica se foi movido para "venda" neste mês
+                    const dataEntradaVenda = new Date(cliente.dataEntradaFunil);
+                    return dataEntradaVenda.getMonth() === mesAtual && 
+                           dataEntradaVenda.getFullYear() === anoAtual;
+                });
+                
+                // Para cada cliente que vendeu, buscar o imóvel associado
+                let totalVendas = 0;
+                vendasFunilMes.forEach(cliente => {
+                    if (cliente.imovelInteresseId) {
+                        const imovel = UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId);
+                        if (imovel && imovel.precoVenda) {
+                            totalVendas += imovel.precoVenda;
+                        }
+                    }
+                });
+                
+                // Também manter as vendas tradicionais por segurança
+                const vendasImoveisMes = imoveis.filter(i => {
+                    if (!i.dataVenda) return false;
+                    const dataVenda = new Date(i.dataVenda);
+                    return dataVenda.getMonth() === mesAtual && 
+                           dataVenda.getFullYear() === anoAtual && 
+                           i.status === 'vendido';
+                });
+                
+                const totalVendasImoveis = vendasImoveisMes.reduce((acc, i) => acc + (i.precoVenda || 0), 0);
+                
+                // Somar ambos os totais
+                totalVendas += totalVendasImoveis;
                 
                 document.getElementById('dash-vendas').innerText = Utils.formatCurrency(totalVendas);
                 
@@ -4842,6 +4842,9 @@ totalVendas += totalVendasImoveis;
                     case 'vendas':
                         reportData = UI.generateSalesReport(start, end);
                         break;
+                    case 'vendas-funil':
+                        reportData = UI.generateSalesFunnelReport(start, end);
+                        break;
                     case 'performance':
                         reportData = UI.generatePerformanceReport(start, end);
                         break;
@@ -4922,7 +4925,7 @@ totalVendas += totalVendasImoveis;
                 const vendedoresTotal = clientesFiltrados.filter(c => c.tipo === 'vendedor').length;
                 const ambosTotal = clientesFiltrados.filter(c => c.tipo === 'ambos').length;
                 
-                html += `
+                                html += `
                     <div class="section-title">Resumo Estatístico</div>
                     <div class="stats-grid">
                         <div class="stat-card">
@@ -5028,8 +5031,7 @@ totalVendas += totalVendasImoveis;
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon" style="background: var(--type-plantao, 0.1); color: var(--type-plantao);">
-                                <i class="fas fa-calendar-check"></i>
-                            </div>
+                                <i class="fas fa-calendar-check"></i></div>
                             <div class="stat-value">${visitasPorTipo.plantao.length}</div>
                             <div class="stat-label">Plantões</div>
                         </div>
@@ -5126,123 +5128,142 @@ totalVendas += totalVendasImoveis;
             },
             
             generateSalesReport: (start, end) => {
+                // Primeiro: clientes na etapa "venda" do funil
+                const clientesVendaConcluida = UI.data.clientes.filter(cliente => 
+                    cliente.etapaFunil === 'venda'
+                );
+                
+                // Segundo: imóveis vendidos no período
                 const imoveisVendidos = UI.data.imoveis.filter(imovel => {
                     if (!imovel.dataVenda) return false;
                     const dataVenda = new Date(imovel.dataVenda);
                     return dataVenda >= start && dataVenda <= end && (imovel.status === 'vendido' || imovel.status === 'alugado');
                 });
                 
-                const vendas = imoveisVendidos.filter(i => i.status === 'vendido');
-                const alugueis = imoveisVendidos.filter(i => i.status === 'alugado');
+                // Terceiro: relacionar clientes com imóveis vendidos
+                const vendasDetalhadas = [];
+                const clientesComVenda = new Set();
                 
-                const totalVendas = vendas.reduce((acc, i) => acc + (i.precoVenda || 0), 0);
-                const totalAlugueis = alugueis.reduce((acc, i) => acc + (i.precoAluguel || 0), 0);
-                const totalGeral = totalVendas + totalAlugueis;
-                
-                const vendasPorTipo = {};
-                imoveisVendidos.forEach(imovel => {
-                    const tipo = imovel.tipo;
-                    if (!vendasPorTipo[tipo]) {
-                        vendasPorTipo[tipo] = { quantidade: 0, valor: 0 };
+                // Para cada cliente na etapa "venda", tentar encontrar seu imóvel
+                clientesVendaConcluida.forEach(cliente => {
+                    // Verificar se cliente tem imóvel de interesse
+                    if (cliente.imovelInteresseId) {
+                        const imovelVendido = imoveisVendidos.find(i => i.id === cliente.imovelInteresseId);
+                        if (imovelVendido) {
+                            vendasDetalhadas.push({
+                                clienteId: cliente.id,
+                                clienteNome: cliente.nome,
+                                clienteTelefone: cliente.telefone,
+                                imovelId: imovelVendido.id,
+                                imovelTitulo: imovelVendido.titulo,
+                                imovelTipo: imovelVendido.tipo,
+                                valor: imovelVendido.precoVenda || imovelVendido.precoAluguel || 0,
+                                dataVenda: imovelVendido.dataVenda,
+                                status: imovelVendido.status,
+                                transacao: imovelVendido.transacao
+                            });
+                            clientesComVenda.add(cliente.id);
+                        }
                     }
-                    vendasPorTipo[tipo].quantidade++;
-                    vendasPorTipo[tipo].valor += (imovel.precoVenda || imovel.precoAluguel || 0);
+                    
+                    // Também verificar se há imóveis vendidos associados a este cliente de outra forma
+                    imoveisVendidos.forEach(imovel => {
+                        // Poderia haver outra lógica de associação aqui
+                        if (!clientesComVenda.has(cliente.id)) {
+                            vendasDetalhadas.push({
+                                clienteId: cliente.id,
+                                clienteNome: cliente.nome,
+                                clienteTelefone: cliente.telefone,
+                                imovelId: imovel.id,
+                                imovelTitulo: imovel.titulo,
+                                imovelTipo: imovel.tipo,
+                                valor: imovel.precoVenda || imovel.precoAluguel || 0,
+                                dataVenda: imovel.dataVenda,
+                                status: imovel.status,
+                                transacao: imovel.transacao
+                            });
+                            clientesComVenda.add(cliente.id);
+                        }
+                    });
                 });
                 
+                // Agrupar vendas por data
+                const vendasPorData = {};
+                vendasDetalhadas.forEach(venda => {
+                    if (!venda.dataVenda) return;
+                    const data = venda.dataVenda.split('T')[0];
+                    if (!vendasPorData[data]) {
+                        vendasPorData[data] = [];
+                    }
+                    vendasPorData[data].push(venda);
+                });
+                
+                const datasOrdenadas = Object.keys(vendasPorData).sort();
+                
+                // Calcular totais
+                const totalVendas = vendasDetalhadas.reduce((acc, v) => acc + (v.valor || 0), 0);
+                const totalClientesVenda = clientesVendaConcluida.length;
+                const totalVendasConfirmadas = vendasDetalhadas.length;
+                
+                // Calcular comissões
+                let totalComissoes = 0;
+                const comissoesDetalhadas = [];
+                
+                vendasDetalhadas.forEach(venda => {
+                    // Taxa de comissão padrão 5%, pode ser ajustada nas configurações
+                    const taxaComissao = 5; // Será buscada das settings
+                    const comissao = (venda.valor * taxaComissao) / 100;
+                    totalComissoes += comissao;
+                    
+                    comissoesDetalhadas.push({
+                        cliente: venda.clienteNome,
+                        imovel: venda.imovelTitulo,
+                        valorVenda: venda.valor,
+                        comissao: comissao,
+                        taxa: taxaComissao + '%',
+                        data: venda.dataVenda
+                    });
+                });
+                
+                // Início do HTML do relatório
                 let html = `
                     <div class="report-summary">
                         <h3>Relatório de Vendas</h3>
                         <p><strong>Período:</strong> ${Utils.formatDate(start.toISOString().split('T')[0])} a ${Utils.formatDate(end.toISOString().split('T')[0])}</p>
-                        <p><strong>Total de Transações:</strong> ${imoveisVendidos.length}</p>
-                        <p><strong>Valor Total:</strong> ${Utils.formatCurrency(totalGeral)}</p>
+                        <p><strong>Clientes em "Venda Concluída":</strong> ${totalClientesVenda}</p>
+                        <p><strong>Vendas Confirmadas:</strong> ${totalVendasConfirmadas}</p>
+                        <p><strong>Valor Total em Vendas:</strong> ${Utils.formatCurrency(totalVendas)}</p>
+                        <p><strong>Total de Comissões:</strong> ${Utils.formatCurrency(totalComissoes)}</p>
                     </div>
                 `;
                 
-                html += `
-                    <div class="section-title">Resumo Financeiro</div>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-icon bg-green"><i class="fas fa-money-bill-wave"></i></div>
-                            <div class="stat-value">${Utils.formatCurrency(totalVendas)}</div>
-                            <div class="stat-label">Vendas</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon bg-blue"><i class="fas fa-hand-holding-usd"></i></div>
-                            <div class="stat-value">${Utils.formatCurrency(totalAlugueis)}</div>
-                            <div class="stat-label">Aluguéis</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon bg-orange"><i class="fas fa-chart-pie"></i></div>
-                            <div class="stat-value">${Utils.formatCurrency(totalGeral)}</div>
-                            <div class="stat-label">Total Geral</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon bg-purple"><i class="fas fa-bullseye"></i></div>
-                            <div class="stat-value">${imoveisVendidos.length}</div>
-                            <div class="stat-label">Transações</div>
-                        </div>
-                    </div>
-                `;
-                
-                html += `
-                    <div class="section-title">Vendas por Tipo de Imóvel</div>
-                    <table class="report-table">
-                        <thead>
-                            <tr>
-                                <th>Tipo</th>
-                                <th>Quantidade</th>
-                                <th>Valor Total</th>
-                                <th>Valor Médio</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                
-                Object.entries(vendasPorTipo).forEach(([tipo, dados]) => {
-                    const valorMedio = dados.quantidade > 0 ? dados.valor / dados.quantidade : 0;
+                // Seção de comissões detalhadas
+                if (comissoesDetalhadas.length > 0) {
                     html += `
-                        <tr>
-                            <td>${Utils.getTipoText(tipo)}</td>
-                            <td>${dados.quantidade}</td>
-                            <td>${Utils.formatCurrency(dados.valor)}</td>
-                            <td>${Utils.formatCurrency(valorMedio)}</td>
-                        </tr>
-                    `;
-                });
-                
-                html += `
-                        </tbody>
-                    </table>
-                `;
-                
-                const ultimasVendas = imoveisVendidos
-                    .sort((a, b) => new Date(b.dataVenda) - new Date(a.dataVenda))
-                    .slice(0, 10);
-                
-                if (ultimasVendas.length > 0) {
-                    html += `
-                        <div class="section-title">Últimas Transações</div>
+                        <div class="section-title">Detalhamento de Comissões</div>
                         <table class="report-table">
                             <thead>
                                 <tr>
-                                    <th>Data</th>
+                                    <th>Cliente</th>
                                     <th>Imóvel</th>
-                                    <th>Tipo</th>
-                                    <th>Valor</th>
-                                    <th>Status</th>
+                                    <th>Valor da Venda</th>
+                                    <th>Taxa Comissão</th>
+                                    <th>Valor Comissão</th>
+                                    <th>Data</th>
                                 </tr>
                             </thead>
                             <tbody>
                     `;
                     
-                    ultimasVendas.forEach(imovel => {
+                    comissoesDetalhadas.forEach(comissao => {
                         html += `
                             <tr>
-                                <td>${Utils.formatDate(imovel.dataVenda)}</td>
-                                <td>${imovel.titulo.substring(0, 30)}...</td>
-                                <td>${Utils.getTipoText(imovel.tipo)}</td>
-                                <td>${Utils.formatCurrency(imovel.precoVenda || imovel.precoAluguel || 0)}</td>
-                                <td><span class="badge ${imovel.status === 'vendido' ? 'badge-success' : 'badge-primary'}">${Utils.getStatusText(imovel.status)}</span></td>
+                                <td>${comissao.cliente}</td>
+                                <td>${comissao.imovel.substring(0, 30)}...</td>
+                                <td>${Utils.formatCurrency(comissao.valorVenda)}</td>
+                                <td>${comissao.taxa}</td>
+                                <td>${Utils.formatCurrency(comissao.comissao)}</td>
+                                <td>${Utils.formatDate(comissao.data)}</td>
                             </tr>
                         `;
                     });
@@ -5253,45 +5274,141 @@ totalVendas += totalVendasImoveis;
                     `;
                 }
                 
-                Storage.getSettings().then(settings => {
-                    const taxaComissao = settings.comissao || 5;
-                    const comissao = (totalGeral * taxaComissao) / 100;
+                // Seção de vendas por data
+                if (datasOrdenadas.length > 0) {
+                    html += `
+                        <div class="section-title">Vendas por Data</div>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Vendas</th>
+                                    <th>Valor Total</th>
+                                    <th>Comissão Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    datasOrdenadas.forEach(data => {
+                        const vendasDoDia = vendasPorData[data];
+                        const valorTotalDia = vendasDoDia.reduce((acc, v) => acc + (v.valor || 0), 0);
+                        const comissaoTotalDia = vendasDoDia.reduce((acc, v) => acc + ((v.valor * 5) / 100), 0);
+                        
+                        html += `
+                            <tr>
+                                <td>${Utils.formatDate(data)}</td>
+                                <td>${vendasDoDia.length}</td>
+                                <td>${Utils.formatCurrency(valorTotalDia)}</td>
+                                <td>${Utils.formatCurrency(comissaoTotalDia)}</td>
+                            </tr>
+                        `;
+                    });
                     
                     html += `
-                        <div class="section-title">Projeção de Comissão</div>
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-icon bg-cyan"><i class="fas fa-percentage"></i></div>
-                                <div class="stat-value">${taxaComissao}%</div>
-                                <div class="stat-label">Taxa</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-icon bg-teal"><i class="fas fa-calculator"></i></div>
-                                <div class="stat-value">${Utils.formatCurrency(comissao)}</div>
-                                <div class="stat-label">Comissão</div>
-                            </div>
-                        </div>
+                            </tbody>
+                        </table>
                     `;
-                });
+                }
+                
+                // Seção de resumo estatístico
+                html += `
+                    <div class="section-title">Resumo Estatístico</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-green"><i class="fas fa-users"></i></div>
+                            <div class="stat-value">${totalClientesVenda}</div>
+                            <div class="stat-label">Clientes Venda</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-blue"><i class="fas fa-handshake"></i></div>
+                            <div class="stat-value">${totalVendasConfirmadas}</div>
+                            <div class="stat-label">Vendas Confirmadas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-orange"><i class="fas fa-money-bill-wave"></i></div>
+                            <div class="stat-value">${Utils.formatCurrency(totalVendas)}</div>
+                            <div class="stat-label">Valor Total</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-purple"><i class="fas fa-percentage"></i></div>
+                            <div class="stat-value">${Utils.formatCurrency(totalComissoes)}</div>
+                            <div class="stat-label">Comissões</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Seção de clientes sem vendas confirmadas
+                const clientesSemVendaConfirmada = clientesVendaConcluida.filter(cliente => 
+                    !clientesComVenda.has(cliente.id)
+                );
+                
+                if (clientesSemVendaConfirmada.length > 0) {
+                    html += `
+                        <div class="section-title" style="color: var(--warning);">
+                            <i class="fas fa-exclamation-triangle"></i> Clientes em "Venda Concluída" sem imóvel associado
+                        </div>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Telefone</th>
+                                    <th>Imóvel de Interesse</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    clientesSemVendaConfirmada.forEach(cliente => {
+                        const imovelInteresse = cliente.imovelInteresseId ? 
+                            UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId) : null;
+                        
+                        html += `
+                            <tr>
+                                <td>${cliente.nome}</td>
+                                <td>${cliente.telefone}</td>
+                                <td>${imovelInteresse ? imovelInteresse.titulo.substring(0, 30) + '...' : 'Não informado'}</td>
+                                <td>
+                                    <button class="btn-sm btn-light" onclick="App.cliente.edit('${cliente.id}')">
+                                        <i class="fas fa-edit"></i> Verificar
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                            </tbody>
+                        </table>
+                        <p class="warning-note">
+                            <i class="fas fa-info-circle"></i> Estes clientes estão marcados como "Venda Concluída" mas não têm um imóvel vendido associado. 
+                            Verifique se a venda foi realmente concluída ou se falta associar um imóvel.
+                        </p>
+                    `;
+                }
                 
                 return {
                     html,
                     data: {
                         periodo: `${Utils.formatDate(start.toISOString().split('T')[0])} a ${Utils.formatDate(end.toISOString().split('T')[0])}`,
-                        total: imoveisVendidos.length,
-                        dados: Object.entries(vendasPorTipo).map(([tipo, dados]) => ({
-                            tipo: Utils.getTipoText(tipo),
-                            quantidade: dados.quantidade,
-                            valor: Utils.formatCurrency(dados.valor),
-                            valorMedio: Utils.formatCurrency(dados.quantidade > 0 ? dados.valor / dados.quantidade : 0)
+                        total: totalVendasConfirmadas,
+                        dados: comissoesDetalhadas.map(c => ({
+                            cliente: c.cliente,
+                            imovel: c.imovel,
+                            valorVenda: Utils.formatCurrency(c.valorVenda),
+                            taxaComissao: c.taxa,
+                            comissao: Utils.formatCurrency(c.comissao),
+                            data: Utils.formatDate(c.data)
                         })),
-                        headers: ['Tipo', 'Quantidade', 'Valor Total', 'Valor Médio'],
+                        headers: ['Cliente', 'Imóvel', 'Valor Venda', 'Taxa', 'Comissão', 'Data'],
                         resumo: {
-                            'Total de Transações': imoveisVendidos.length,
-                            'Vendas': Utils.formatCurrency(totalVendas),
-                            'Aluguéis': Utils.formatCurrency(totalAlugueis),
-                            'Total Geral': Utils.formatCurrency(totalGeral),
-                            'Média por Transação': imoveisVendidos.length > 0 ? Utils.formatCurrency(totalGeral / imoveisVendidos.length) : 'R$ 0,00'
+                            'Clientes em Venda Concluída': totalClientesVenda,
+                            'Vendas Confirmadas': totalVendasConfirmadas,
+                            'Valor Total em Vendas': Utils.formatCurrency(totalVendas),
+                            'Total de Comissões': Utils.formatCurrency(totalComissoes),
+                            'Média por Venda': totalVendasConfirmadas > 0 ? Utils.formatCurrency(totalVendas / totalVendasConfirmadas) : 'R$ 0,00',
+                            'Média de Comissão': totalVendasConfirmadas > 0 ? Utils.formatCurrency(totalComissoes / totalVendasConfirmadas) : 'R$ 0,00'
                         }
                     },
                     type: 'vendas'
@@ -5309,18 +5426,31 @@ totalVendas += totalVendasImoveis;
                     return dataVisita >= start && dataVisita <= end;
                 }).length;
                 
-                const imoveisVendidos = UI.data.imoveis.filter(i => {
-                    if (!i.dataVenda) return false;
-                    const dataVenda = new Date(i.dataVenda);
-                    return dataVenda >= start && dataVenda <= end && (i.status === 'vendido' || i.status === 'alugado');
-                }).length;
+                // MODIFICAÇÃO: Agora usamos a lógica correta de vendas
+                const clientesVendaConcluida = UI.data.clientes.filter(cliente => 
+                    cliente.etapaFunil === 'venda'
+                ).length;
+                
+                // Calcular vendas confirmadas (com imóvel associado)
+                let vendasConfirmadas = 0;
+                let valorTotalVendas = 0;
+                
+                UI.data.clientes.forEach(cliente => {
+                    if (cliente.etapaFunil === 'venda' && cliente.imovelInteresseId) {
+                        const imovel = UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId);
+                        if (imovel && (imovel.status === 'vendido' || imovel.status === 'alugado')) {
+                            vendasConfirmadas++;
+                            valorTotalVendas += (imovel.precoVenda || imovel.precoAluguel || 0);
+                        }
+                    }
+                });
                 
                 const imoveisCadastrados = UI.data.imoveis.filter(i => {
                     const dataCriacao = new Date(i.dataCriacao);
                     return dataCriacao >= start && dataCriacao <= end;
                 }).length;
                 
-                const taxaConversao = clientes > 0 ? ((imoveisVendidos / clientes) * 100).toFixed(1) : 0;
+                const taxaConversao = clientes > 0 ? ((clientesVendaConcluida / clientes) * 100).toFixed(1) : 0;
                 const taxaVisitas = clientes > 0 ? ((visitas / clientes) * 100).toFixed(1) : 0;
                 
                 let html = `
@@ -5351,8 +5481,8 @@ totalVendas += totalVendasImoveis;
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon bg-red"><i class="fas fa-handshake"></i></div>
-                            <div class="stat-value">${imoveisVendidos}</div>
-                            <div class="stat-label">Transações</div>
+                            <div class="stat-value">${vendasConfirmadas}</div>
+                            <div class="stat-label">Vendas Confirmadas</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon bg-purple"><i class="fas fa-percentage"></i></div>
@@ -5360,11 +5490,90 @@ totalVendas += totalVendasImoveis;
                             <div class="stat-label">Conversão</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon bg-cyan"><i class="fas fa-chart-line"></i></div>
-                            <div class="stat-value">${taxaVisitas}%</div>
-                            <div class="stat-label">Visitas/Cliente</div>
+                            <div class="stat-icon bg-cyan"><i class="fas fa-money-bill-wave"></i></div>
+                            <div class="stat-value">${Utils.formatCurrency(valorTotalVendas)}</div>
+                            <div class="stat-label">Valor Vendas</div>
                         </div>
                     </div>
+                `;
+                
+                // Análise do funil de vendas
+                const etapas = UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem);
+                const clientesPorEtapa = {};
+                
+                etapas.forEach(etapa => {
+                    const clientesNaEtapa = UI.data.clientes.filter(c => c.etapaFunil === etapa.id);
+                    clientesPorEtapa[etapa.id] = clientesNaEtapa.length;
+                });
+                
+                html += `
+                    <div class="section-title">Análise do Funil de Vendas</div>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Etapa do Funil</th>
+                                <th>Clientes</th>
+                                <th>Porcentagem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                etapas.forEach(etapa => {
+                    const quantidade = clientesPorEtapa[etapa.id] || 0;
+                    const porcentagem = UI.data.clientes.length > 0 ? 
+                        ((quantidade / UI.data.clientes.length) * 100).toFixed(1) : 0;
+                    
+                    html += `
+                        <tr>
+                            <td>${etapa.nome}</td>
+                            <td>${quantidade}</td>
+                            <td>${porcentagem}%</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                        </tbody>
+                    </table>
+                `;
+                
+                // Taxa de conversão entre etapas
+                html += `
+                    <div class="section-title">Taxa de Conversão entre Etapas</div>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>De → Para</th>
+                                <th>Taxa de Conversão</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                for (let i = 0; i < etapas.length - 1; i++) {
+                    const etapaAtual = etapas[i];
+                    const etapaProxima = etapas[i + 1];
+                    
+                    const clientesAtual = clientesPorEtapa[etapaAtual.id] || 0;
+                    const clientesProxima = clientesPorEtapa[etapaProxima.id] || 0;
+                    
+                    let taxaConversaoEtapa = '0%';
+                    if (clientesAtual > 0) {
+                        taxaConversaoEtapa = ((clientesProxima / clientesAtual) * 100).toFixed(1) + '%';
+                    }
+                    
+                    html += `
+                        <tr>
+                            <td>${etapaAtual.nome} → ${etapaProxima.nome}</td>
+                            <td>${taxaConversaoEtapa}</td>
+                        </tr>
+                    `;
+                }
+                
+                html += `
+                        </tbody>
+                    </table>
                 `;
                 
                 const meses = [];
@@ -5391,11 +5600,19 @@ totalVendas += totalVendasImoveis;
                         return dataVisita >= inicioMes && dataVisita <= fimMes;
                     }).length;
                     
-                    const vendasMes = UI.data.imoveis.filter(i => {
-                        if (!i.dataVenda) return false;
-                        const dataVenda = new Date(i.dataVenda);
-                        return dataVenda >= inicioMes && dataVenda <= fimMes && (i.status === 'vendido' || i.status === 'alugado');
-                    }).length;
+                    // Vendas por mês - nova lógica
+                    let vendasMes = 0;
+                    UI.data.clientes.forEach(cliente => {
+                        if (cliente.etapaFunil === 'venda' && cliente.imovelInteresseId) {
+                            const imovel = UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId);
+                            if (imovel && imovel.dataVenda) {
+                                const dataVenda = new Date(imovel.dataVenda);
+                                if (dataVenda >= inicioMes && dataVenda <= fimMes) {
+                                    vendasMes++;
+                                }
+                            }
+                        }
+                    });
                     
                     meses.push(mesAno);
                     clientesPorMes.push(clientesMes);
@@ -5414,7 +5631,7 @@ totalVendas += totalVendasImoveis;
                                     <th>Mês</th>
                                     <th>Clientes</th>
                                     <th>Agendamentos</th>
-                                    <th>Transações</th>
+                                    <th>Vendas</th>
                                     <th>Taxa Conversão</th>
                                 </tr>
                             </thead>
@@ -5448,12 +5665,15 @@ totalVendas += totalVendasImoveis;
                 html += `
                     <div class="section-title">Análise e Recomendações</div>
                     <div class="report-summary">
-                        <p><strong>Média Mensal:</strong> ${mediaClientesPorMes} clientes novos, ${mediaVendasPorMes} transações</p>
-                        <p><strong>Taxa de Conversão:</strong> ${taxaConversao}% (${imoveisVendidos} transações / ${clientes} clientes)</p>
+                        <p><strong>Média Mensal:</strong> ${mediaClientesPorMes} clientes novos, ${mediaVendasPorMes} vendas</p>
+                        <p><strong>Taxa de Conversão Geral:</strong> ${taxaConversao}% (${clientesVendaConcluida} vendas / ${clientes} clientes)</p>
                         <p><strong>Eficiência de Visitas:</strong> ${(visitas / clientes).toFixed(1)} visitas por cliente</p>
+                        <p><strong>Valor Médio por Venda:</strong> ${vendasConfirmadas > 0 ? Utils.formatCurrency(valorTotalVendas / vendasConfirmadas) : 'R$ 0,00'}</p>
+                        
                         ${taxaConversao < 10 ? '<p class="warning-note"><i class="fas fa-exclamation-triangle"></i> Taxa de conversão baixa. Considere melhorar o acompanhamento pós-visita.</p>' : ''}
                         ${mediaClientesPorMes < 5 ? '<p class="warning-note"><i class="fas fa-exclamation-triangle"></i> Captação de clientes abaixo do ideal. Considere aumentar ações de marketing.</p>' : ''}
                         ${(visitas / clientes) < 1.5 ? '<p class="warning-note"><i class="fas fa-exclamation-triangle"></i> Poucas visitas por cliente. Considere melhorar o processo de agendamento.</p>' : ''}
+                        ${clientesVendaConcluida > vendasConfirmadas ? `<p class="warning-note"><i class="fas fa-exclamation-triangle"></i> ${clientesVendaConcluida - vendasConfirmadas} cliente(s) marcado(s) como "Venda Concluída" sem imóvel associado. Verifique no relatório de vendas.</p>` : ''}
                     </div>
                 `;
                 
@@ -5461,21 +5681,23 @@ totalVendas += totalVendasImoveis;
                     html,
                     data: {
                         periodo: `${Utils.formatDate(start.toISOString().split('T')[0])} a ${Utils.formatDate(end.toISOString().split('T')[0])}`,
-                        total: clientes + visitas + imoveisVendidos + imoveisCadastrados,
+                        total: clientes + visitas + vendasConfirmadas + imoveisCadastrados,
                         dados: meses.map((mes, index) => ({
                             mes,
                             clientes: clientesPorMes[index],
                             visitas: visitasPorMes[index],
-                            transacoes: vendasPorMes[index],
+                            vendas: vendasPorMes[index],
                             taxaConversao: clientesPorMes[index] > 0 ? ((vendasPorMes[index] / clientesPorMes[index]) * 100).toFixed(1) + '%' : '0%'
                         })),
-                        headers: ['Mês', 'Clientes', 'Agendamentos', 'Transações', 'Taxa Conversão'],
+                        headers: ['Mês', 'Clientes', 'Agendamentos', 'Vendas', 'Taxa Conversão'],
                         resumo: {
                             'Clientes Novos': clientes,
                             'Agendamentos': visitas,
                             'Imóveis Cadastrados': imoveisCadastrados,
-                            'Transações': imoveisVendidos,
+                            'Vendas Confirmadas': vendasConfirmadas,
+                            'Clientes em Venda Concluída': clientesVendaConcluida,
                             'Taxa de Conversão': taxaConversao + '%',
+                            'Valor Total em Vendas': Utils.formatCurrency(valorTotalVendas),
                             'Média de Clientes/Mês': mediaClientesPorMes,
                             'Média de Vendas/Mês': mediaVendasPorMes
                         }
@@ -5483,1468 +5705,3 @@ totalVendas += totalVendasImoveis;
                     type: 'performance'
                 };
             },
-            
-            generatePlantaoReport: (date) => {
-                const selectedDateStr = date.toISOString().split('T')[0];
-                
-                const clientesPlantao = UI.data.clientes.filter(c => {
-                    return c.dataCriacao && c.dataCriacao.startsWith(selectedDateStr);
-                });
-
-                let html = `
-                    <div class="report-summary" style="border-left: 4px solid #7c3aed; background: #f3e8ff;">
-                        <h3 style="color: #5b21b6;">📋 Relatório de Plantão</h3>
-                        <p><strong>Data:</strong> ${Utils.formatDate(selectedDateStr)}</p>
-                        <p><strong>Total de atendimentos:</strong> ${clientesPlantao.length}</p>
-                    </div>
-                    
-                    <div class="section-title" style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
-                        <span>Clientes Cadastrados</span>
-                        <button class="btn-sm" style="background: #7c3aed; color: white;" onclick="Utils.generatePlantaoPDF('${selectedDateStr}')">
-                            <i class="fas fa-file-pdf"></i> Baixar PDF
-                        </button>
-                    </div>
-                `;
-
-                if (clientesPlantao.length === 0) {
-                    html += `<div class="empty-state"><i class="fas fa-user-clock"></i><p>Nenhum cliente cadastrado nesta data.</p></div>`;
-                } else {
-                    html += `<div style="display: flex; flex-direction: column; gap: 10px;">`;
-                    
-                    clientesPlantao.forEach(c => {
-                        html += `
-                            <div class="client-card" style="border-left: 4px solid ${Utils.getEtapaFunilColor(c.etapaFunil)}">
-                                <div class="client-header">
-                                    <div class="client-name">${c.nome}</div>
-                                    <div style="display:flex; gap: 8px;">
-                                        <button class="icon-btn" style="color: var(--primary);" title="Editar Observação" onclick="UI.editPlantaoObs('${c.id}')">
-                                            <i class="fas fa-pen"></i>
-                                        </button>
-                                        <button class="icon-btn" style="color: var(--danger);" title="Excluir Cliente" onclick="UI.deletePlantaoClient('${c.id}')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="client-info">
-                                    <div class="client-row"><strong>Tel:</strong> ${c.telefone}</div>
-                                    <div class="client-row"><strong>Interesse:</strong> ${c.faixaPreco || 'Não inf.'}</div>
-                                    <div style="margin-top: 8px; background: #f8fafc; padding: 10px; border-radius: 6px; font-size: 0.9rem; border: 1px dashed #cbd5e1;">
-                                        <strong>Observações:</strong><br>
-                                        <span style="color: #334155;">${c.observacoes || '<em>Clique no lápis para adicionar observações...</em>'}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    html += `</div>`;
-                }
-
-                return {
-                    html: html,
-                    type: 'plantao',
-                    data: clientesPlantao
-                };
-            },
-
-            editPlantaoObs: async (id) => {
-                const cliente = UI.data.clientes.find(c => c.id === id);
-                if (!cliente) return;
-
-                const novaObs = prompt("Editar Observações para " + cliente.nome + ":", cliente.observacoes || "");
-                
-                if (novaObs !== null) {
-                    cliente.observacoes = novaObs;
-                    await DB.put('clientes', cliente);
-                    
-                    const dateInput = document.getElementById('report-date-start').value;
-                    const parts = dateInput.split('-');
-                    const dateObj = new Date(parts[0], parts[1]-1, parts[2]);
-                    
-                    const report = UI.generatePlantaoReport(dateObj);
-                    UI.currentReport = report;
-                    UI.renderReport();
-                    Utils.toast("Observação atualizada!");
-                }
-            },
-
-            deletePlantaoClient: async (id) => {
-                if(confirm("Tem certeza que deseja excluir este cliente?")) {
-                    UI.data.clientes = UI.data.clientes.filter(c => c.id !== id);
-                    await DB.delete('clientes', id);
-                    
-                    const dateInput = document.getElementById('report-date-start').value;
-                    const parts = dateInput.split('-');
-                    const dateObj = new Date(parts[0], parts[1]-1, parts[2]);
-
-                    const report = UI.generatePlantaoReport(dateObj);
-                    UI.currentReport = report;
-                    UI.renderReport(); 
-                    
-                    Utils.toast("Cliente removido.");
-                }
-            },
-
-            exportReport: () => {
-                if (!UI.currentReport) {
-                    Utils.toast('Gere um relatório primeiro', 'error');
-                    return;
-                }
-                
-                Utils.generateReportPDF(UI.currentReport.data, UI.currentReport.type);
-            },
-
-            openModal: (type) => {
-                const overlay = document.getElementById(`overlay-${type}`);
-                if (overlay) {
-                    overlay.classList.add('active');
-                }
-            },
-            
-            closeModals: () => {
-                document.querySelectorAll('.modal-overlay').forEach(el => el.classList.remove('active'));
-            },
-
-            openNewCliente: (fromVisita = false) => {
-                const form = document.getElementById('form-cliente');
-                if (!form) return;
-                
-                form.reset();
-                document.getElementById('c-id').value = '';
-                document.getElementById('title-cliente').innerText = 'Novo Cliente';
-                
-                const imovelSelect = document.getElementById('c-imovel-interesse');
-                if (imovelSelect) {
-                    imovelSelect.innerHTML = '<option value="">Selecione um imóvel...</option>';
-                    UI.data.imoveis.forEach(i => {
-                        imovelSelect.innerHTML += `<option value="${i.id}">${i.titulo.substring(0, 40)}...</option>`;
-                    });
-                }
-                
-                const etapaSelect = document.getElementById('c-etapa-funil');
-                if (etapaSelect) {
-                    etapaSelect.innerHTML = '';
-                    UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem).forEach(etapa => {
-                        etapaSelect.innerHTML += `<option value="${etapa.id}">${etapa.nome}</option>`;
-                    });
-                }
-                
-                UI.openModal('cliente');
-            },
-
-            openNewImovel: () => {
-                const form = document.getElementById('form-imovel');
-                if (!form) return;
-                
-                form.reset();
-                document.getElementById('i-id').value = '';
-                document.getElementById('title-imovel').innerText = 'Novo Imóvel';
-                
-                const gallery = document.getElementById('image-gallery');
-                if (gallery) {
-                    gallery.innerHTML = `
-                        <div class="image-gallery-item add-image-btn" onclick="document.getElementById('i-imagem-input').click()">
-                            <i class="fas fa-plus"></i>
-                            <span>Adicionar Foto</span>
-                        </div>
-                    `;
-                }
-                
-                document.getElementById('videos-list').innerHTML = '';
-                document.getElementById('i-videos-data').value = '[]';
-                document.getElementById('video-counter').innerText = '0';
-                document.getElementById('i-video-url').value = '';
-                
-                document.getElementById('image-counter').innerText = '0';
-                document.getElementById('i-imagens-data').value = '[]';
-                
-                UI.openModal('imovel');
-            },
-
-            openNewVisita: () => {
-                const clienteSelect = document.getElementById('v-cliente');
-                const imovelSelect = document.getElementById('v-imovel');
-                
-                if (clienteSelect) {
-                    clienteSelect.innerHTML = '<option value="">Selecione...</option>';
-                    UI.data.clientes.forEach(c => {
-                        clienteSelect.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
-                    });
-                }
-                
-                if (imovelSelect) {
-                    imovelSelect.innerHTML = '<option value="">Selecione...</option>';
-                    UI.data.imoveis.filter(i => i.status === 'disponivel').forEach(i => {
-                        imovelSelect.innerHTML += `<option value="${i.id}">${i.titulo.substring(0, 30)}...</option>`;
-                    });
-                }
-                
-                const form = document.getElementById('form-visita');
-                if (!form) return;
-                
-                form.reset();
-                document.getElementById('v-id').value = '';
-                document.getElementById('title-visita').innerText = 'Novo Agendamento';
-                
-                document.getElementById('v-data').value = Utils.getToday();
-                document.getElementById('v-horario').value = Utils.getTodayTime();
-                
-                document.querySelectorAll('.tipo-specific-group').forEach(group => {
-                    group.style.display = 'none';
-                    group.querySelectorAll('input, textarea, select').forEach(input => {
-                        input.value = '';
-                    });
-                });
-                
-                UI.toggleVisitaFields();
-                
-                
-                UI.openModal('visita');
-            },
-
-toggleVisitaFields: () => {
-    const tipoSelect = document.getElementById('v-tipo');
-    if (!tipoSelect) return;
-    
-    const tipo = tipoSelect.value;
-    
-    document.querySelectorAll('.tipo-specific-group').forEach(group => {
-        group.style.display = 'none';
-    });
-    
-    const grupoId = `grupo-${tipo}`;
-    const grupoEspecifico = document.getElementById(grupoId);
-    if(grupoEspecifico) {
-        grupoEspecifico.style.display = 'block';
-    }
-    
-    // Definir quais tipos precisam de cliente e imóvel
-    const tiposComCliente = ['ligacao', 'whatsapp', 'reuniao', 'visita', 'documentacao'];
-    const tiposComImovel = ['visita']; // Apenas visita precisa de imóvel
-    
-    document.querySelectorAll('.cliente-dependent-group').forEach(el => {
-        el.style.display = tiposComCliente.includes(tipo) ? 'block' : 'none';
-    });
-    
-    document.querySelectorAll('.imovel-dependent-group').forEach(el => {
-        el.style.display = tiposComImovel.includes(tipo) ? 'block' : 'none';
-    });
-    
-    const clienteField = document.getElementById('v-cliente');
-    const imovelField = document.getElementById('v-imovel');
-    
-    if (clienteField) clienteField.required = tiposComCliente.includes(tipo);
-    if (imovelField) imovelField.required = tiposComImovel.includes(tipo);
-},
-            openNewVisitaFromImovel: (imovelId) => {
-                UI.openNewVisita();
-                setTimeout(() => {
-                    const imovelSelect = document.getElementById('v-imovel');
-                    const tipoSelect = document.getElementById('v-tipo');
-                    
-                    if (imovelSelect) imovelSelect.value = imovelId;
-                    if (tipoSelect) {
-                        tipoSelect.value = 'visita';
-                        UI.toggleVisitaFields();
-                    }
-                }, 100);
-            },
-
-            openSettings: async () => {
-                const s = await Storage.getSettings();
-                document.getElementById('s-nome').value = s.nome || '';
-                document.getElementById('s-creci').value = s.creci || '';
-                document.getElementById('s-telefone').value = s.telefone || '';
-                document.getElementById('s-email').value = s.email || '';
-                document.getElementById('s-imobiliaria').value = s.imobiliaria || '';
-                document.getElementById('s-comissao').value = s.comissao || 5;
-                
-                UI.openModal('settings');
-            },
-
-            toggleReportInputs: (type) => {
-                const endInput = document.getElementById('report-date-end');
-                if(type === 'plantao') {
-                    endInput.style.display = 'none';
-                    if(!document.getElementById('report-date-start').value) {
-                        document.getElementById('report-date-start').value = Utils.getToday();
-                    }
-                } else {
-                    endInput.style.display = 'block';
-                }
-            }
-
-        };
-
-        // Aplicação principal
-        const App = {
-            cliente: {
-                save: async (e) => {
-                    e.preventDefault();
-                    const id = document.getElementById('c-id').value || Utils.id();
-                    const nome = document.getElementById('c-nome').value;
-                    const tipo = document.getElementById('c-tipo').value;
-                    const etapaFunil = document.getElementById('c-etapa-funil').value || 'lead';
-                    const telefone = document.getElementById('c-telefone').value;
-                    const email = document.getElementById('c-email').value;
-                    const imovelInteresseId = document.getElementById('c-imovel-interesse').value || null;
-                    const dataNascimento = document.getElementById('c-data-nascimento').value || null;
-                    const faixaPreco = document.getElementById('c-faixa-preco').value;
-                    const observacoes = document.getElementById('c-observacoes').value;
-
-                    const newClient = { 
-                        id, nome, tipo, etapaFunil, telefone, email, 
-                        imovelInteresseId, dataNascimento,
-                        faixaPreco, observacoes,
-                        dataCriacao: new Date().toISOString(),
-                        dataEntradaFunil: new Date().toISOString().split('T')[0]
-                    };
-                    
-                    const existingIdx = UI.data.clientes.findIndex(c => c.id === id);
-                    if(existingIdx >= 0) {
-                        if(UI.data.clientes[existingIdx].dataEntradaFunil && UI.data.clientes[existingIdx].etapaFunil === etapaFunil) {
-                            newClient.dataEntradaFunil = UI.data.clientes[existingIdx].dataEntradaFunil;
-                        }
-                        UI.data.clientes[existingIdx] = newClient;
-                        await DB.put('clientes', newClient);
-                    } else {
-                        UI.data.clientes.push(newClient);
-                        await DB.add('clientes', newClient);
-                    }
-
-                    UI.data.clientes = await Storage.getClientes();
-                    
-                                        Utils.toast('Cliente salvo com sucesso!');
-                    
-                    UI.closeModals();
-                    UI.renderClientes();
-                    UI.renderDashboard();
-                    UI.renderFunil();
-                },
-                
-                edit: async (id) => {
-                    const cliente = UI.data.clientes.find(x => x.id === id);
-                    if(!cliente) return;
-                    
-                    document.getElementById('c-id').value = cliente.id;
-                    document.getElementById('c-nome').value = cliente.nome || '';
-                    document.getElementById('c-tipo').value = cliente.tipo || 'comprador';
-                    document.getElementById('c-telefone').value = cliente.telefone || '';
-                    document.getElementById('c-email').value = cliente.email || '';
-                    document.getElementById('c-imovel-interesse').value = cliente.imovelInteresseId || '';
-                    document.getElementById('c-data-nascimento').value = cliente.dataNascimento || '';
-                    document.getElementById('c-faixa-preco').value = cliente.faixaPreco || '';
-                    document.getElementById('c-observacoes').value = cliente.observacoes || '';
-                    document.getElementById('title-cliente').innerText = 'Editar Cliente';
-                    
-                    const imovelSelect = document.getElementById('c-imovel-interesse');
-                    if (imovelSelect) {
-                        imovelSelect.innerHTML = '<option value="">Selecione um imóvel...</option>';
-                        UI.data.imoveis.forEach(i => {
-                            imovelSelect.innerHTML += `<option value="${i.id}">${i.titulo.substring(0, 40)}...</option>`;
-                        });
-                        imovelSelect.value = cliente.imovelInteresseId || '';
-                    }
-                    
-                    const etapaSelect = document.getElementById('c-etapa-funil');
-                    if (etapaSelect) {
-                        etapaSelect.innerHTML = '';
-                        UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem).forEach(etapa => {
-                            etapaSelect.innerHTML += `<option value="${etapa.id}">${etapa.nome}</option>`;
-                        });
-                        etapaSelect.value = cliente.etapaFunil || 'lead';
-                    }
-                    
-                    UI.openModal('cliente');
-                },
-                
-                delete: async (id) => {
-                    if(!confirm('Tem certeza que deseja excluir este cliente?')) return;
-                    
-                    UI.data.clientes = UI.data.clientes.filter(x => x.id !== id);
-                    await DB.delete('clientes', id);
-                    
-                    Utils.toast('Cliente excluído');
-                    UI.renderClientes();
-                    UI.renderDashboard();
-                    UI.renderFunil();
-                },
-                
-                whatsappPersonalizado: async (clienteId) => {
-    const cliente = UI.data.clientes.find(x => x.id === clienteId);
-    if(!cliente) return;
-    
-    const settings = await Storage.getSettings();
-    let message = '';
-    
-    const hour = new Date().getHours();
-    let greeting = "Boa noite";
-    if (hour >= 5 && hour < 12) greeting = "Bom dia";
-    if (hour >= 12 && hour < 18) greeting = "Boa tarde";
-    
-    const clienteFirstName = cliente.nome.split(' ')[0];
-    
-    if (Utils.isBirthdayToday(cliente.dataNascimento)) {
-        const idade = Utils.calculateAge(cliente.dataNascimento);
-        message = `${greeting}, ${clienteFirstName}! 🎉🎂\n\n`;
-        message += `Me chamo ${settings.nome || 'Alex Peixoto'} sou do time de vendas da  ${settings.imobiliaria || 'Resende'}.\n`;
-        message += `Gostaria de parabenizá-lo pelos seus ${idade} anos! 🎊\n\n`;
-        message += `Desejo muita saúde, felicidade e sucesso! ✨\n`;
-        message += `Que este novo ano de vida seja repleto de conquistas! 🏆\n\n`;
-        message += `Fico à disposição para ajudá-lo(a) na realização do sonho da casa própria! 🏠\n\n`;
-        message += `📞 *Contato:* ${settings.telefone || '(82) 99662-2036'}\n`;
-        message += `🏢 *Imobiliária:* ${settings.imobiliaria || 'Resende'}`;
-    } else {
-        const imovel = cliente.imovelInteresseId ? 
-            UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId) : null;
-        
-        message = await Utils.generateWhatsAppMessage(cliente, imovel);
-    }
-    
-    // Limpar e formatar o número
-    let phoneNumber = cliente.telefone.replace(/\D/g, '');
-    
-    // Remover o 0 no início se existir
-    if (phoneNumber.startsWith('0')) {
-        phoneNumber = phoneNumber.substring(1);
-    }
-    
-    // Adicionar código do Brasil (55) se não tiver
-    if (!phoneNumber.startsWith('55')) {
-        phoneNumber = '55' + phoneNumber;
-    }
-    
-    // Verificar se é dispositivo iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    
-    const encodedMessage = encodeURIComponent(message);
-    
-    // Para iOS, tentar abrir no app primeiro
-    if (isIOS) {
-        // Tentar abrir diretamente no app do WhatsApp
-        const appUrl = `whatsapp://send?phone=${phoneNumber}&text=${encodedMessage}`;
-        
-        // Tentar abrir o app
-        window.location.href = appUrl;
-        
-        // Se não abrir em 500ms, abrir na web
-        setTimeout(() => {
-            // Verificar se ainda estamos na mesma página (app não abriu)
-            if (document.hasFocus()) {
-                const webUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-                // Usar window.location.href para usar a mesma aba
-                window.location.href = webUrl;
-            }
-        }, 500);
-    } else {
-        // Para outros dispositivos
-        // Primeiro tentar abrir o WhatsApp Web na mesma aba
-        const webUrl = `https://web.whatsapp.com/send?phone=${phoneNumber}&text=${encodedMessage}`;
-        
-        // Verificar se já temos uma janela do WhatsApp aberta
-        let whatsappWindow = window.open('', '_blank');
-        
-        // Tenta carregar o WhatsApp Web
-        try {
-            whatsappWindow.location.href = webUrl;
-            
-            // Foca na janela existente
-            if (whatsappWindow) {
-                whatsappWindow.focus();
-            }
-        } catch (e) {
-            // Se houver erro (por exemplo, bloqueio de popup), abre na mesma aba
-            window.location.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-        }
-    }
-},
-                
-                email: (clienteId) => {
-                    const cliente = UI.data.clientes.find(x => x.id === clienteId);
-                    if(!cliente || !cliente.email) {
-                        Utils.toast('Cliente sem email', 'error');
-                        return;
-                    }
-                    
-                    const hour = new Date().getHours();
-                    let greeting = "Boa noite";
-                    if (hour >= 5 && hour < 12) greeting = "Bom dia";
-                    if (hour >= 12 && hour < 18) greeting = "Boa tarde";
-                    
-                    const clienteFirstName = cliente.nome.split(' ')[0];
-                    const imovel = cliente.imovelInteresseId ? 
-                        UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId) : null;
-                    
-                    let subject = `ImobiPro - ${imovel ? `Informações sobre ${imovel.titulo.substring(0, 30)}...` : 'Contato Imobiliário'}`;
-                    let body = `${greeting}, ${clienteFirstName}!\n\n`;
-                    
-                    if (imovel) {
-                        body += `Segue mais informações sobre o imóvel de seu interesse:\n\n`;
-                        body += `*${imovel.titulo}*\n`;
-                        body += `📍 ${imovel.endereco}\n`;
-                        body += `🏠 Tipo: ${Utils.getTipoText(imovel.tipo)}\n`;
-                        if (imovel.area) body += `📐 Área: ${imovel.area}m²\n`;
-                        if (imovel.quartos) body += `🛏️ Quartos: ${imovel.quartos}\n`;
-                        if (imovel.banheiros) body += `🛁 Banheiros: ${imovel.banheiros}\n`;
-                        if (imovel.vagas) body += `🚗 Vagas: ${imovel.vagas}\n`;
-                        if (imovel.gasEncanado === 'sim') body += `🔥 Gás Encanado: Sim\n`;
-                        if (imovel.condominio) body += `💰 Condomínio: ${Utils.formatCurrency(imovel.condominio)}/mês\n\n`;
-                        
-                        if (imovel.precoVenda) {
-                            body += `💰 *Preço de Venda:* ${Utils.formatCurrency(imovel.precoVenda)}\n`;
-                        } else if (imovel.precoAluguel) {
-                            body += `💰 *Preço de Aluguel:* ${Utils.formatCurrency(imovel.precoAluguel)}/mês\n`;
-                        }
-                        
-                        if (imovel.dataEntrega) {
-                            body += `\n📅 *Data de Entrega:* ${Utils.formatDate(imovel.dataEntrega)}\n`;
-                        }
-                        
-                        if (imovel.construtora) {
-                            body += `\n🏗️ *Construtora:* ${imovel.construtora}\n`;
-                        }
-                        
-                        if (imovel.descricao) {
-                            body += `\n📝 *Descrição:*\n${imovel.descricao}\n`;
-                        }
-                        
-                        if (imovel.videos && imovel.videos.length > 0) {
-                            body += `\n🎥 *Vídeos disponíveis:*\n`;
-                            imovel.videos.forEach((video, index) => {
-                                body += `• Vídeo ${index + 1}: ${video.url}\n`;
-                            });
-                        }
-                    } else {
-                        body += `Gostaria de agendar uma conversa para entendermos melhor suas necessidades e apresentar algumas opções de imóveis que podem te interessar.\n\n`;
-                    }
-                    
-                    const settings = Storage.getSettings();
-                    body += `\n📞 *Contato:* ${settings.telefone || '(82) 99662-2036'}\n`;
-                    body += `🏢 *Imobiliária:* ${settings.imobiliaria || 'Resende'}\n`;
-                    body += `👨‍💼 *Corretor:* ${settings.nome || 'Alex Peixoto'}\n`;
-                    body += `📋 *CRECI:* ${settings.creci || '5794-AL'}`;
-                    
-                    const mailtoLink = `mailto:${cliente.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                    window.location.href = mailtoLink;
-                }
-            },
-            
-            imovel: {
-                save: async (e) => {
-                    e.preventDefault();
-                    
-                    try {
-                        const id = document.getElementById('i-id').value || Utils.id();
-                        const titulo = document.getElementById('i-titulo').value;
-                        const tipo = document.getElementById('i-tipo').value;
-                        const transacao = document.getElementById('i-transacao').value;
-                        const precoVenda = document.getElementById('i-preco-venda').value ? Utils.parseCurrency(document.getElementById('i-preco-venda').value) : 0;
-                        const precoAluguel = document.getElementById('i-preco-aluguel').value ? Utils.parseCurrency(document.getElementById('i-preco-aluguel').value) : 0;
-                        const endereco = document.getElementById('i-endereco').value;
-                        const area = parseFloat(document.getElementById('i-area').value) || 0;
-                        const quartos = parseInt(document.getElementById('i-quartos').value) || 0;
-                        const banheiros = parseInt(document.getElementById('i-banheiros').value) || 0;
-                        const vagas = parseInt(document.getElementById('i-vagas').value) || 0;
-                        const status = document.getElementById('i-status').value;
-                        const gasEncanado = document.getElementById('i-gas-encanado').value;
-                        const condominio = document.getElementById('i-condominio').value ? Utils.parseCurrency(document.getElementById('i-condominio').value) : 0;
-                        const descricao = document.getElementById('i-descricao').value;
-                        const observacoes = document.getElementById('i-observacoes').value;
-                        const construtora = document.getElementById('i-construtora').value;
-                        const formaPagamento = document.getElementById('i-forma-pagamento').value;
-                        const dataEntrega = document.getElementById('i-data-entrega').value;
-                        
-                        const imagensData = document.getElementById('i-imagens-data').value;
-                        const imagens = imagensData ? JSON.parse(imagensData) : [];
-                        
-                        const videosData = document.getElementById('i-videos-data').value;
-                        const videos = videosData ? JSON.parse(videosData) : [];
-                        
-                        const newImovel = {
-                            id,
-                            titulo,
-                            tipo,
-                            transacao,
-                            precoVenda,
-                            precoAluguel,
-                            endereco,
-                            area,
-                            quartos,
-                            banheiros,
-                            vagas,
-                            status,
-                            gasEncanado,
-                            condominio,
-                            descricao,
-                            observacoes,
-                            construtora,
-                            formaPagamento,
-                            dataEntrega,
-                            imagens,
-                            videos,
-                            dataCriacao: new Date().toISOString(),
-                            dataAtualizacao: new Date().toISOString()
-                        };
-                        
-                        if (status === 'vendido' || status === 'alugado') {
-                            newImovel.dataVenda = new Date().toISOString().split('T')[0];
-                        }
-                        
-                        const existingIdx = UI.data.imoveis.findIndex(i => i.id === id);
-                        if (existingIdx >= 0) {
-                            UI.data.imoveis[existingIdx] = newImovel;
-                            await DB.put('imoveis', newImovel);
-                        } else {
-                            UI.data.imoveis.push(newImovel);
-                            await DB.add('imoveis', newImovel);
-                        }
-                        
-                        UI.data.imoveis = await Storage.getImoveis();
-                        
-                        Utils.toast('Imóvel salvo com sucesso!');
-                        
-                        UI.closeModals();
-                        UI.renderImoveis();
-                        UI.renderDashboard();
-                        
-                    } catch (error) {
-                        console.error('Erro ao salvar imóvel:', error);
-                        Utils.toast('Erro ao salvar imóvel', 'error');
-                    }
-                },
-                
-                edit: async (id) => {
-                    try {
-                        const imovel = UI.data.imoveis.find(x => x.id === id);
-                        if (!imovel) return;
-                        
-                        document.getElementById('i-id').value = imovel.id;
-                        document.getElementById('i-titulo').value = imovel.titulo || '';
-                        document.getElementById('i-tipo').value = imovel.tipo || 'apartamento';
-                        document.getElementById('i-transacao').value = imovel.transacao || 'venda';
-                        document.getElementById('i-preco-venda').value = imovel.precoVenda ? imovel.precoVenda.toString() : '';
-                        document.getElementById('i-preco-aluguel').value = imovel.precoAluguel ? imovel.precoAluguel.toString() : '';
-                        document.getElementById('i-endereco').value = imovel.endereco || '';
-                        document.getElementById('i-area').value = imovel.area || '';
-                        document.getElementById('i-quartos').value = imovel.quartos || '';
-                        document.getElementById('i-banheiros').value = imovel.banheiros || '';
-                        document.getElementById('i-vagas').value = imovel.vagas || '';
-                        document.getElementById('i-status').value = imovel.status || 'disponivel';
-                        document.getElementById('i-gas-encanado').value = imovel.gasEncanado || 'nao';
-                        document.getElementById('i-condominio').value = imovel.condominio ? imovel.condominio.toString() : '';
-                        document.getElementById('i-descricao').value = imovel.descricao || '';
-                        document.getElementById('i-observacoes').value = imovel.observacoes || '';
-                        document.getElementById('i-construtora').value = imovel.construtora || '';
-                        document.getElementById('i-forma-pagamento').value = imovel.formaPagamento || '';
-                        document.getElementById('i-data-entrega').value = imovel.dataEntrega || '';
-                        
-                        document.getElementById('title-imovel').innerText = 'Editar Imóvel';
-                        
-                        const imagens = imovel.imagens || [];
-                        document.getElementById('i-imagens-data').value = JSON.stringify(imagens);
-                        document.getElementById('image-counter').innerText = imagens.length;
-                        
-                        App.imovel.renderImageGallery(imagens);
-                        
-                        const videos = imovel.videos || [];
-                        document.getElementById('i-videos-data').value = JSON.stringify(videos);
-                        document.getElementById('video-counter').innerText = videos.length;
-                        
-                        App.imovel.renderVideoList(videos);
-                        
-                        App.imovel.toggleAluguelFields();
-                        
-                        UI.openModal('imovel');
-                        
-                    } catch (error) {
-                        console.error('Erro ao editar imóvel:', error);
-                        Utils.toast('Erro ao carregar imóvel', 'error');
-                    }
-                },
-                
-                toggleAluguelFields: () => {
-                    const transacao = document.getElementById('i-transacao').value;
-                    const aluguelGroup = document.getElementById('i-aluguel-group');
-                    
-                    if (transacao === 'aluguel' || transacao === 'ambos') {
-                        aluguelGroup.style.display = 'block';
-                    } else {
-                        aluguelGroup.style.display = 'none';
-                    }
-                },
-                
-                handleMultipleImages: async function(input) {
-                    const files = Array.from(input.files || []);
-                    if (files.length === 0) return;
-                    
-                    const existingImages = JSON.parse(document.getElementById('i-imagens-data').value || '[]');
-                    const remainingSlots = 15 - existingImages.length;
-                    
-                    if (files.length > remainingSlots) {
-                        Utils.toast(`Máximo de 15 imagens. Você pode adicionar mais ${remainingSlots} imagens.`, 'error');
-                        return;
-                    }
-                    
-                    try {
-                        const newImages = [];
-                        
-                        for (const file of files) {
-                            if (file.size > 10 * 1024 * 1024) {
-                                Utils.toast(`Imagem ${file.name} muito grande. Máximo 10MB.`, 'error');
-                                continue;
-                            }
-                            
-                            try {
-                                const base64 = await Utils.readImage(file);
-                                const compressed = await Utils.compressImage(base64, 0.7, 1200);
-                                newImages.push(compressed);
-                            } catch (error) {
-                                console.error('Erro ao processar imagem:', error);
-                                Utils.toast(`Erro ao processar ${file.name}`, 'error');
-                            }
-                        }
-                        
-                        const allImages = [...existingImages, ...newImages];
-                        document.getElementById('i-imagens-data').value = JSON.stringify(allImages);
-                        document.getElementById('image-counter').innerText = allImages.length;
-                        
-                        App.imovel.renderImageGallery(allImages);
-                        
-                        input.value = '';
-                        
-                    } catch (error) {
-                        console.error('Erro ao processar imagens:', error);
-                        Utils.toast('Erro ao processar imagens', 'error');
-                    }
-                },
-                
-                renderImageGallery: function(images) {
-                    const gallery = document.getElementById('image-gallery');
-                    if (!gallery) return;
-                    
-                    let html = '';
-                    
-                    images.forEach((img, index) => {
-                        html += `
-                            <div class="image-gallery-item">
-                                <img src="${img}" class="image-gallery-img" onclick="event.stopPropagation(); UI.openFullscreenFromGallery(${index})">
-                                <button class="remove-image-btn" onclick="event.stopPropagation(); App.imovel.removeImage(${index})">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        `;
-                    });
-                    
-                    if (images.length < 15) {
-                        html += `
-                            <div class="image-gallery-item add-image-btn" onclick="document.getElementById('i-imagem-input').click()">
-                                <i class="fas fa-plus"></i>
-                                <span>Adicionar Foto</span>
-                            </div>
-                        `;
-                    }
-                    
-                    gallery.innerHTML = html;
-                },
-                
-                removeImage: function(index) {
-                    const images = JSON.parse(document.getElementById('i-imagens-data').value || '[]');
-                    images.splice(index, 1);
-                    
-                    document.getElementById('i-imagens-data').value = JSON.stringify(images);
-                    document.getElementById('image-counter').innerText = images.length;
-                    
-                    App.imovel.renderImageGallery(images);
-                },
-                
-                addVideo: function() {
-                    const urlInput = document.getElementById('i-video-url');
-                    const url = urlInput.value.trim();
-                    
-                    if (!url) {
-                        Utils.toast('Digite uma URL válida', 'error');
-                        return;
-                    }
-                    
-                    if (!Utils.isValidVideoUrl(url)) {
-                        Utils.toast('URL inválida. Use YouTube ou Vimeo.', 'error');
-                        return;
-                    }
-                    
-                    const videos = JSON.parse(document.getElementById('i-videos-data').value || '[]');
-                    
-                    if (videos.length >= 5) {
-                        Utils.toast('Máximo de 5 vídeos por imóvel', 'error');
-                        return;
-                    }
-                    
-                    if (videos.some(v => v.url === url)) {
-                        Utils.toast('Vídeo já adicionado', 'error');
-                        return;
-                    }
-                    
-                    videos.push({ url, dateAdded: new Date().toISOString() });
-                    
-                    document.getElementById('i-videos-data').value = JSON.stringify(videos);
-                    document.getElementById('video-counter').innerText = videos.length;
-                    
-                    App.imovel.renderVideoList(videos);
-                    
-                    urlInput.value = '';
-                },
-                
-                renderVideoList: function(videos) {
-                    const container = document.getElementById('videos-list');
-                    if (!container) return;
-                    
-                    let html = '';
-                    
-                    videos.forEach((video, index) => {
-                        const thumbnail = Utils.generateVideoThumbnail(video.url);
-                        html += `
-                            <div class="form-group" style="border: 1px solid var(--border); padding: 10px; border-radius: 8px; margin-top: 8px;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    ${thumbnail ? `
-                                        <img src="${thumbnail}" style="width: 60px; height: 40px; border-radius: 4px; object-fit: cover;">
-                                    ` : `
-                                        <div style="width: 60px; height: 40px; background: #f1f5f9; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-video" style="color: var(--secondary);"></i>
-                                        </div>
-                                    `}
-                                    <div style="flex: 1; font-size: 0.8rem;">
-                                        <div style="word-break: break-all;">${video.url.substring(0, 50)}...</div>
-                                        <button class="btn-sm" style="color: var(--danger); padding: 4px 8px; margin-top: 4px;" onclick="App.imovel.removeVideo(${index})">
-                                            <i class="fas fa-trash"></i> Remover
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    
-                    container.innerHTML = html;
-                },
-                
-                removeVideo: function(index) {
-                    const videos = JSON.parse(document.getElementById('i-videos-data').value || '[]');
-                    videos.splice(index, 1);
-                    
-                    document.getElementById('i-videos-data').value = JSON.stringify(videos);
-                    document.getElementById('video-counter').innerText = videos.length;
-                    
-                    App.imovel.renderVideoList(videos);
-                },
-                
-                delete: async (id) => {
-                    if(!confirm('Tem certeza que deseja excluir este imóvel? Esta ação não pode ser desfeita.')) return;
-                    
-                    UI.data.imoveis = UI.data.imoveis.filter(x => x.id !== id);
-                    await DB.delete('imoveis', id);
-                    
-                    Utils.toast('Imóvel excluído');
-                    UI.renderImoveis();
-                    UI.renderDashboard();
-                }
-            },
-            
-            agenda: {
-                save: async (e) => {
-                    e.preventDefault();
-                    
-                    try {
-                        const id = document.getElementById('v-id').value || Utils.id();
-                        const tipo = document.getElementById('v-tipo').value;
-                        const clienteId = document.getElementById('v-cliente').value;
-                        const imovelId = document.getElementById('v-imovel').value;
-                        const data = document.getElementById('v-data').value;
-                        const horario = document.getElementById('v-horario').value;
-                        const observacoes = document.getElementById('v-observacoes').value;
-                        const status = document.getElementById('v-status').value;
-                        
-                        const newVisita = {
-                            id,
-                            tipo,
-                            clienteId: clienteId || null,
-                            imovelId: imovelId || null,
-                            data,
-                            horario,
-                            observacoes,
-                            status,
-                            dataCriacao: new Date().toISOString()
-                        };
-                        
-                        if (tipo === 'visita') {
-                            newVisita.localVisita = document.getElementById('v-local-visita').value;
-                        } else if (tipo === 'reuniao-construtor') {
-                            newVisita.construtorNome = document.getElementById('v-construtor-nome').value;
-                            newVisita.construtorEmpreendimento = document.getElementById('v-construtor-empreendimento').value;
-                            newVisita.construtorAssuntos = document.getElementById('v-construtor-assuntos').value;
-                        } else if (tipo === 'reuniao-equipe') {
-                            newVisita.equipeTipo = document.getElementById('v-equipe-tipo').value;
-                            newVisita.equipeParticipantes = document.getElementById('v-equipe-participantes').value;
-                            newVisita.equipeAssuntos = document.getElementById('v-equipe-assuntos').value;
-                        } else if (tipo === 'documentacao') {
-                            newVisita.documentacaoTipo = document.getElementById('v-documentacao-tipo').value;
-                            newVisita.documentacaoLocal = document.getElementById('v-documentacao-local').value;
-                        } else if (tipo === 'plantao') {
-                            newVisita.plantaoLocal = document.getElementById('v-plantao-local').value;
-                            newVisita.detalhesPlantoes = document.getElementById('v-detalhes-plantoes').value;
-                            newVisita.clientesAtendidos = document.getElementById('v-clientes-atendidos').value;
-                            newVisita.negociosGerados = document.getElementById('v-negocios-gerados').value;
-                        } else if (tipo === 'generico') {
-                            newVisita.genericoTitulo = document.getElementById('v-generico-titulo').value;
-                            newVisita.genericoLocal = document.getElementById('v-generico-local').value;
-                            newVisita.genericoDescricao = document.getElementById('v-generico-descricao').value;
-                        } else if (tipo === 'outro') {
-                            newVisita.outroDescricao = document.getElementById('v-outro-descricao').value;
-                            newVisita.outroDetalhes = document.getElementById('v-outro-detalhes').value;
-                        }
-                        
-                        const existingIdx = UI.data.visitas.findIndex(v => v.id === id);
-                        if (existingIdx >= 0) {
-                            UI.data.visitas[existingIdx] = newVisita;
-                            await DB.put('visitas', newVisita);
-                        } else {
-                            UI.data.visitas.push(newVisita);
-                            await DB.add('visitas', newVisita);
-                        }
-                        
-                        UI.data.visitas = await Storage.getVisitas();
-                        
-                        Utils.toast('Agendamento salvo com sucesso!');
-                        
-                        UI.closeModals();
-                        UI.renderAgenda();
-                        UI.renderDashboard();
-                        
-                    } catch (error) {
-                        console.error('Erro ao salvar agendamento:', error);
-                        Utils.toast('Erro ao salvar agendamento', 'error');
-                    }
-                },
-                
-                edit: async (id) => {
-                    try {
-                        const visita = UI.data.visitas.find(x => x.id === id);
-                        if (!visita) return;
-                        
-                        document.getElementById('v-id').value = visita.id;
-                        document.getElementById('v-tipo').value = visita.tipo || 'visita';
-                        document.getElementById('v-cliente').value = visita.clienteId || '';
-                        document.getElementById('v-imovel').value = visita.imovelId || '';
-                        document.getElementById('v-data').value = visita.data || '';
-                        document.getElementById('v-horario').value = visita.horario || '';
-                        document.getElementById('v-observacoes').value = visita.observacoes || '';
-                        document.getElementById('v-status').value = visita.status || 'agendado';
-                        
-                        document.getElementById('title-visita').innerText = 'Editar Agendamento';
-                        
-                        const clienteSelect = document.getElementById('v-cliente');
-                        const imovelSelect = document.getElementById('v-imovel');
-                        
-                        if (clienteSelect) {
-                            clienteSelect.innerHTML = '<option value="">Selecione...</option>';
-                            UI.data.clientes.forEach(c => {
-                                clienteSelect.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
-                            });
-                            clienteSelect.value = visita.clienteId || '';
-                        }
-                        
-                        if (imovelSelect) {
-                            imovelSelect.innerHTML = '<option value="">Selecione...</option>';
-                            UI.data.imoveis.forEach(i => {
-                                imovelSelect.innerHTML += `<option value="${i.id}">${i.titulo.substring(0, 30)}...</option>`;
-                            });
-                            imovelSelect.value = visita.imovelId || '';
-                        }
-                        
-                        document.querySelectorAll('.tipo-specific-group').forEach(group => {
-                            group.style.display = 'none';
-                        });
-                        
-                        const tipo = visita.tipo || 'visita';
-                        const grupoId = `grupo-${tipo}`;
-                        const grupoEspecifico = document.getElementById(grupoId);
-                        if (grupoEspecifico) {
-                            grupoEspecifico.style.display = 'block';
-                            
-                            if (tipo === 'visita') {
-                                document.getElementById('v-local-visita').value = visita.localVisita || '';
-                            } else if (tipo === 'reuniao-construtor') {
-                                document.getElementById('v-construtor-nome').value = visita.construtorNome || '';
-                                document.getElementById('v-construtor-empreendimento').value = visita.construtorEmpreendimento || '';
-                                document.getElementById('v-construtor-assuntos').value = visita.construtorAssuntos || '';
-                            } else if (tipo === 'reuniao-equipe') {
-                                document.getElementById('v-equipe-tipo').value = visita.equipeTipo || '';
-                                document.getElementById('v-equipe-participantes').value = visita.equipeParticipantes || '';
-                                document.getElementById('v-equipe-assuntos').value = visita.equipeAssuntos || '';
-                            } else if (tipo === 'documentacao') {
-                                document.getElementById('v-documentacao-tipo').value = visita.documentacaoTipo || '';
-                                document.getElementById('v-documentacao-local').value = visita.documentacaoLocal || '';
-                            } else if (tipo === 'plantao') {
-                                document.getElementById('v-plantao-local').value = visita.plantaoLocal || '';
-                                document.getElementById('v-detalhes-plantoes').value = visita.detalhesPlantoes || '';
-                                document.getElementById('v-clientes-atendidos').value = visita.clientesAtendidos || '';
-                                document.getElementById('v-negocios-gerados').value = visita.negociosGerados || '';
-                            } else if (tipo === 'generico') {
-                                document.getElementById('v-generico-titulo').value = visita.genericoTitulo || '';
-                                document.getElementById('v-generico-local').value = visita.genericoLocal || '';
-                                document.getElementById('v-generico-descricao').value = visita.genericoDescricao || '';
-                            } else if (tipo === 'outro') {
-                                document.getElementById('v-outro-descricao').value = visita.outroDescricao || '';
-                                document.getElementById('v-outro-detalhes').value = visita.outroDetalhes || '';
-                            }
-                        }
-                        
-                        UI.toggleVisitaFields();
-                        
-                        UI.openModal('visita');
-                        
-                    } catch (error) {
-                        console.error('Erro ao editar agendamento:', error);
-                        Utils.toast('Erro ao carregar agendamento', 'error');
-                    }
-                },
-                
-                delete: async (id) => {
-                    if(!confirm('Tem certeza que deseja excluir este agendamento?')) return;
-                    
-                    UI.data.visitas = UI.data.visitas.filter(x => x.id !== id);
-                    await DB.delete('visitas', id);
-                    
-                    Utils.toast('Agendamento excluído');
-                    UI.renderAgenda();
-                    UI.renderDashboard();
-                }
-            },
-            
-            whatsapp: {
-                shareImovel: async (imovelId) => {
-                    const imovel = UI.data.imoveis.find(x => x.id === imovelId);
-                    if (!imovel) return;
-                    
-                    const settings = await Storage.getSettings();
-                    let message = `*🏠 ${imovel.titulo}*\n\n`;
-                    
-                    message += `📍 *Endereço:* ${imovel.endereco}\n`;
-                    message += `🏠 *Tipo:* ${Utils.getTipoText(imovel.tipo)}\n`;
-                    
-                    if (imovel.precoVenda) {
-                        message += `💰 *Preço de Venda:* ${Utils.formatCurrency(imovel.precoVenda)}\n`;
-                    }
-                    if (imovel.precoAluguel) {
-                        message += `💰 *Preço de Aluguel:* ${Utils.formatCurrency(imovel.precoAluguel)}/mês\n`;
-                    }
-                    
-                    if (imovel.area) message += `📐 *Área:* ${imovel.area}m²\n`;
-                    if (imovel.quartos) message += `🛏️ *Quartos:* ${imovel.quartos}\n`;
-                    if (imovel.banheiros) message += `🛁 *Banheiros:* ${imovel.banheiros}\n`;
-                    if (imovel.vagas) message += `🚗 *Vagas:* ${imovel.vagas}\n`;
-                    if (imovel.condominio) message += `🏢 *Condomínio:* ${Utils.formatCurrency(imovel.condominio)}/mês\n`;
-                    
-                    if (imovel.dataEntrega) {
-                        message += `\n📅 *Data de Entrega:* ${Utils.formatDate(imovel.dataEntrega)}\n`;
-                    }
-                    
-                    if (imovel.construtora) {
-                        message += `\n🏗️ *Construtora:* ${imovel.construtora}\n`;
-                    }
-                    
-                    if (imovel.formaPagamento) {
-                        message += `\n💳 *Forma de Pagamento:*\n${imovel.formaPagamento}\n`;
-                    }
-                    
-                    if (imovel.descricao) {
-                        message += `\n📝 *Descrição:*\n${imovel.descricao.substring(0, 200)}${imovel.descricao.length > 200 ? '...' : ''}\n`;
-                    }
-                    
-                    message += `\n📞 *Contato:* ${settings.telefone || '(82) 99662-2036'}\n`;
-                    message += `🏢 *Imobiliária:* ${settings.imobiliaria || 'Resende'}\n`;
-                    message += `👨‍💼 *Corretor:* ${settings.nome || 'Alex Peixoto'}\n`;
-                    message += `📋 *CRECI:* ${settings.creci || '5794-AL'}`;
-                    
-                    const encodedMessage = encodeURIComponent(message);
-                    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-                    
-                    window.open(whatsappUrl, '_blank');
-                }
-            },
-            
-            link: {
-                save: async (e) => {
-                    e.preventDefault();
-                    
-                    const id = document.getElementById('l-id').value || Utils.id();
-                    const titulo = document.getElementById('l-titulo').value;
-                    const url = document.getElementById('l-url').value;
-                    const categoria = document.getElementById('l-categoria').value;
-                    const descricao = document.getElementById('l-descricao').value;
-                    
-                    const newLink = {
-                        id,
-                        titulo,
-                        url,
-                        categoria,
-                        descricao,
-                        dataCriacao: new Date().toISOString()
-                    };
-                    
-                    const existingIdx = UI.data.links.findIndex(l => l.id === id);
-                    if (existingIdx >= 0) {
-                        UI.data.links[existingIdx] = newLink;
-                        await DB.put('links', newLink);
-                    } else {
-                        UI.data.links.push(newLink);
-                        await DB.add('links', newLink);
-                    }
-                    
-                    UI.data.links = await Storage.getLinks();
-                    
-                    Utils.toast('Link salvo com sucesso!');
-                    
-                    UI.closeModals();
-                    UI.renderLinks();
-                },
-                
-                edit: async (id) => {
-                    const link = UI.data.links.find(x => x.id === id);
-                    if (!link) return;
-                    
-                    document.getElementById('l-id').value = link.id;
-                    document.getElementById('l-titulo').value = link.titulo;
-                    document.getElementById('l-url').value = link.url;
-                    document.getElementById('l-categoria').value = link.categoria || 'outros';
-                    document.getElementById('l-descricao').value = link.descricao || '';
-                    document.getElementById('title-link').innerText = 'Editar Link';
-                    
-                    UI.openModal('link');
-                },
-                
-                delete: async (id) => {
-                    if(!confirm('Tem certeza que deseja excluir este link?')) return;
-                    
-                    UI.data.links = UI.data.links.filter(x => x.id !== id);
-                    await DB.delete('links', id);
-                    
-                    Utils.toast('Link excluído');
-                    UI.renderLinks();
-                },
-                
-                open: (id) => {
-                    const link = UI.data.links.find(x => x.id === id);
-                    if (link && link.url) {
-                        window.open(link.url, '_blank');
-                    }
-                },
-                
-                copy: (id) => {
-                    const link = UI.data.links.find(x => x.id === id);
-                    if (link && link.url) {
-                        navigator.clipboard.writeText(link.url).then(() => {
-                            Utils.toast('Link copiado para a área de transferência');
-                        });
-                    }
-                }
-            },
-            
-            settings: {
-                save: async (e) => {
-                    e.preventDefault();
-                    
-                    const settings = {
-                        id: 'main',
-                        nome: document.getElementById('s-nome').value,
-                        creci: document.getElementById('s-creci').value,
-                        telefone: document.getElementById('s-telefone').value,
-                        email: document.getElementById('s-email').value,
-                        imobiliaria: document.getElementById('s-imobiliaria').value,
-                        comissao: parseFloat(document.getElementById('s-comissao').value) || 5
-                    };
-                    
-                    await DB.put('settings', settings);
-                    
-                    Utils.toast('Configurações salvas!');
-                    
-                    UI.closeModals();
-                }
-            },
-            
-            backup: {
-                exportData: () => {
-                    try {
-                        const data = {
-                            clientes: UI.data.clientes,
-                            imoveis: UI.data.imoveis,
-                            visitas: UI.data.visitas,
-                            links: UI.data.links,
-                            settings: Storage.getSettings().then(s => s),
-                            funilEtapas: UI.data.funilEtapas,
-                            exportDate: new Date().toISOString(),
-                            version: '1.0',
-                            app: 'ImobiPro'
-                        };
-                        
-                        Storage.getSettings().then(settings => {
-                            data.settings = settings;
-                            
-                            const dataStr = JSON.stringify(data, null, 2);
-                            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                            const url = URL.createObjectURL(dataBlob);
-                            
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `imobipro_backup_${new Date().toISOString().split('T')[0]}.json`;
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                            
-                            Utils.toast('Backup exportado com sucesso!');
-                        });
-                        
-                    } catch (error) {
-                        console.error('Erro ao exportar backup:', error);
-                        Utils.toast('Erro ao exportar backup', 'error');
-                    }
-                },
-                
-                importTrigger: () => {
-                    document.getElementById('import-file').click();
-                },
-                
-                importData: async (input) => {
-                    const file = input.files[0];
-                    if (!file) return;
-                    
-                    if (!confirm('⚠️ ATENÇÃO: Importar backup irá SOBRESCREVER todos os dados atuais. Deseja continuar?')) {
-                        input.value = '';
-                        return;
-                    }
-                    
-                    try {
-                        const text = await file.text();
-                        const data = JSON.parse(text);
-                        
-                        if (!data.app || data.app !== 'ImobiPro') {
-                            throw new Error('Arquivo de backup inválido');
-                        }
-                        
-                        if (data.clientes && Array.isArray(data.clientes)) {
-                            await DB.clear('clientes');
-                            for (const cliente of data.clientes) {
-                                await DB.add('clientes', cliente);
-                            }
-                        }
-                        
-                        if (data.imoveis && Array.isArray(data.imoveis)) {
-                            await DB.clear('imoveis');
-                            for (const imovel of data.imoveis) {
-                                await DB.add('imoveis', imovel);
-                            }
-                        }
-                        
-                        if (data.visitas && Array.isArray(data.visitas)) {
-                            await DB.clear('visitas');
-                            for (const visita of data.visitas) {
-                                await DB.add('visitas', visita);
-                            }
-                        }
-                        
-                        if (data.links && Array.isArray(data.links)) {
-                            await DB.clear('links');
-                            for (const link of data.links) {
-                                await DB.add('links', link);
-                            }
-                        }
-                        
-                        if (data.settings) {
-                            await DB.put('settings', data.settings);
-                        }
-                        
-                        if (data.funilEtapas && Array.isArray(data.funilEtapas)) {
-                            await DB.clear('funilEtapas');
-                            for (const etapa of data.funilEtapas) {
-                                await DB.add('funilEtapas', etapa);
-                            }
-                        }
-                        
-                        UI.data.clientes = await Storage.getClientes();
-                        UI.data.imoveis = await Storage.getImoveis();
-                        UI.data.visitas = await Storage.getVisitas();
-                        UI.data.links = await Storage.getLinks();
-                        UI.data.funilEtapas = await Storage.getFunilEtapas();
-                        
-                        UI.renderClientes();
-                        UI.renderImoveis();
-                        UI.renderAgenda();
-                        UI.renderLinks();
-                        UI.renderDashboard();
-                        UI.renderFunil();
-                        
-                        Utils.toast('Backup importado com sucesso!');
-                        
-                    } catch (error) {
-                        console.error('Erro ao importar backup:', error);
-                        Utils.toast('Erro ao importar backup. Arquivo inválido.', 'error');
-                    }
-                    
-                    input.value = '';
-                },
-                
-                exportIOS: () => {
-                    try {
-                        const data = {
-                            clientes: UI.data.clientes,
-                            imoveis: UI.data.imoveis,
-                            visitas: UI.data.visitas,
-                            links: UI.data.links,
-                            settings: Storage.getSettings().then(s => s),
-                            funilEtapas: UI.data.funilEtapas,
-                            exportDate: new Date().toISOString(),
-                            version: '1.0',
-                            app: 'ImobiPro'
-                        };
-                        
-                        Storage.getSettings().then(settings => {
-                            data.settings = settings;
-                            
-                            const dataStr = JSON.stringify(data, null, 2);
-                            
-                            const blob = new Blob([dataStr], { type: 'application/json' });
-                            const reader = new FileReader();
-                            
-                            reader.onload = function(e) {
-                                const text = e.target.result;
-                                const compressed = LZString.compressToEncodedURIComponent(text);
-                                
-                                const downloadLink = document.createElement('a');
-                                downloadLink.href = 'data:application/octet-stream,' + compressed;
-                                downloadLink.download = `imobipro_ios_backup_${new Date().toISOString().split('T')[0]}.txt`;
-                                downloadLink.click();
-                            };
-                            
-                            reader.readAsText(blob);
-                            
-                            Utils.toast('Backup para iOS gerado com sucesso!');
-                        });
-                        
-                    } catch (error) {
-                        console.error('Erro ao exportar backup iOS:', error);
-                        Utils.toast('Erro ao exportar backup iOS', 'error');
-                    }
-                },
-                
-                clearData: async () => {
-                    if(!confirm('🚨🚨🚨 ATENÇÃO 🚨🚨🚨\n\nIsso apagará TODOS os dados do aplicativo:\n- Todos os clientes\n- Todos os imóveis\n- Todos os agendamentos\n- Todos os links\n- Todas as configurações\n\nEsta ação NÃO pode ser desfeita!\n\nTem certeza absoluta?')) return;
-                    
-                    try {
-                        await DB.clear('clientes');
-                        await DB.clear('imoveis');
-                        await DB.clear('visitas');
-                        await DB.clear('links');
-                        await DB.clear('funilEtapas');
-                        
-                        const defaultSettings = {
-                            id: 'main',
-                            nome: 'Alex Peixoto',
-                            creci: '5794-AL',
-                            telefone: '(82) 99662-2036',
-                            email: '',
-                            imobiliaria: 'Resende',
-                            comissao: 5
-                        };
-                        await DB.put('settings', defaultSettings);
-                        
-                        const etapasPadrao = [
-                            { id: 'lead', nome: 'Lead', cor: '#93c5fd', ordem: 1 },
-                            { id: 'contato', nome: 'Contato Realizado', cor: '#60a5fa', ordem: 2 },
-                            { id: 'cpf', nome: 'CPF em Análise', cor: '#3b82f6', ordem: 3 },
-                            { id: 'sem-restricao', nome: 'Sem Restrição', cor: '#1d4ed8', ordem: 4 },
-                            { id: 'documentacao', nome: 'Documentação', cor: '#7c3aed', ordem: 5 },
-                            { id: 'aprovado', nome: 'Aprovado', cor: '#10b981', ordem: 6 },
-                            { id: 'contrato', nome: 'Contrato Assinado', cor: '#059669', ordem: 7 },
-                            { id: 'venda', nome: 'Venda Concluída', cor: '#047857', ordem: 8 }
-                        ];
-                        
-                        for (const etapa of etapasPadrao) {
-                            await DB.put('funilEtapas', etapa);
-                        }
-                        
-                        UI.data.clientes = await Storage.getClientes();
-                        UI.data.imoveis = await Storage.getImoveis();
-                        UI.data.visitas = await Storage.getVisitas();
-                        UI.data.links = await Storage.getLinks();
-                        UI.data.funilEtapas = await Storage.getFunilEtapas();
-                        
-                        UI.renderClientes();
-                        UI.renderImoveis();
-                        UI.renderAgenda();
-                        UI.renderLinks();
-                        UI.renderDashboard();
-                        UI.renderFunil();
-                        
-                        Utils.toast('Todos os dados foram resetados!', 'success');
-                        
-                    } catch (error) {
-                        console.error('Erro ao resetar dados:', error);
-                        Utils.toast('Erro ao resetar dados', 'error');
-                    }
-                }
-            }
-        };
-
-        // Inicialização da aplicação
-        document.addEventListener('DOMContentLoaded', () => {
-            UI.init();
-        });
-
-        // PWA - Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => {
-                        console.log('ServiceWorker registrado com sucesso:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('Falha ao registrar ServiceWorker:', error);
-                    });
-            });
-        }
-
-        // Evento de fechamento do modal ao clicar no overlay
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-overlay')) {
-                UI.closeModals();
-            }
-        });
-
-        // Evento para fechar teclado virtual ao clicar fora de inputs
-        document.addEventListener('touchstart', (e) => {
-            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT') {
-                document.activeElement.blur();
-            }
-        });
-
-        // Prevenir zoom em inputs no iOS
-        document.addEventListener('touchmove', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
-                e.preventDefault();
-            }
-        }, { passive: false });
-
-        // Função auxiliar para abrir fullscreen da galeria
-        UI.openFullscreenFromGallery = function(index) {
-            const currentSheet = document.querySelector('.modal-sheet[style*="transform: translateY(0px)"]');
-            if (!currentSheet) return;
-            
-            const imovelId = document.getElementById('i-id')?.value;
-            if (!imovelId) return;
-            
-            UI.openFullscreen(imovelId, index);
-        };
-
-    </script>
-
-    <!-- LZString para compressão (necessário para export iOS) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
-</body>
-</html>
