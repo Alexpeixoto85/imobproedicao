@@ -3610,8 +3610,33 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 const mesAtual = hojeObj.getMonth();
                 const anoAtual = hojeObj.getFullYear();
                 
-                // SUBSTITUA esta parte:
-const vendasMes = imoveis.filter(i => {
+// NOVO CÁLCULO DE VENDAS BASEADO NO FUNIL
+const vendasFunilMes = UI.data.clientes.filter(cliente => {
+    // Verifica se está na etapa "venda"
+    if (cliente.etapaFunil !== 'venda') return false;
+    
+    // Verifica se tem data de entrada no funil
+    if (!cliente.dataEntradaFunil) return false;
+    
+    // Verifica se foi movido para "venda" neste mês
+    const dataEntradaVenda = new Date(cliente.dataEntradaFunil);
+    return dataEntradaVenda.getMonth() === mesAtual && 
+           dataEntradaVenda.getFullYear() === anoAtual;
+});
+
+// Para cada cliente que vendeu, buscar o imóvel associado
+let totalVendas = 0;
+vendasFunilMes.forEach(cliente => {
+    if (cliente.imovelInteresseId) {
+        const imovel = UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId);
+        if (imovel && imovel.precoVenda) {
+            totalVendas += imovel.precoVenda;
+        }
+    }
+});
+
+// Também manter as vendas tradicionais por segurança
+const vendasImoveisMes = imoveis.filter(i => {
     if (!i.dataVenda) return false;
     const dataVenda = new Date(i.dataVenda);
     return dataVenda.getMonth() === mesAtual && 
@@ -3619,11 +3644,12 @@ const vendasMes = imoveis.filter(i => {
            i.status === 'vendido';
 });
 
-const totalVendas = vendasMes.reduce((acc, i) => acc + (i.precoVenda || 0), 0);
-document.getElementById('dash-vendas').innerText = Utils.formatCurrency(totalVendas);
+const totalVendasImoveis = vendasImoveisMes.reduce((acc, i) => acc + (i.precoVenda || 0), 0);
 
-const { totalVendas } = UI.getVendasMesFunil();
-document.getElementById('dash-vendas').innerText = Utils.formatCurrency(totalVendas);
+// Somar ambos os totais
+totalVendas += totalVendasImoveis;
+                
+                document.getElementById('dash-vendas').innerText = Utils.formatCurrency(totalVendas);
                 
                 const negociacoes = imoveis.filter(i => i.status === 'reservado').length;
                 document.getElementById('dash-negociacoes').innerText = negociacoes;
@@ -3701,61 +3727,6 @@ document.getElementById('dash-vendas').innerText = Utils.formatCurrency(totalVen
                     badge.innerText = aniversariantes.length.toString();
                 }
             },
-            // Adicione esta função no objeto UI (por exemplo, após a função renderDashboard)
-getVendasMesFunil: () => {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
-    
-    // Filtra clientes na etapa "venda" (concluída) do funil
-    const clientesVendaConcluida = UI.data.clientes.filter(cliente => {
-        if (cliente.etapaFunil !== 'venda') return false;
-        
-        // Verifica se tem data de entrada na etapa venda
-        if (!cliente.dataEntradaFunil) return false;
-        
-        // Verifica se foi concluído neste mês
-        const dataConclusao = new Date(cliente.dataEntradaFunil);
-        return dataConclusao.getMonth() === mesAtual && 
-               dataConclusao.getFullYear() === anoAtual;
-    });
-    
-    // Para cada cliente na etapa de venda, obtém o valor do imóvel
-    let totalVendas = 0;
-    const vendasDetalhadas = [];
-    
-    for (const cliente of clientesVendaConcluida) {
-        // Tenta obter o imóvel de interesse do cliente
-        const imovel = cliente.imovelInteresseId ? 
-            UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId) : null;
-        
-        if (imovel && imovel.precoVenda) {
-            totalVendas += imovel.precoVenda;
-            vendasDetalhadas.push({
-                cliente: cliente.nome,
-                imovel: imovel.titulo,
-                valor: imovel.precoVenda,
-                data: cliente.dataEntradaFunil
-            });
-        } else if (imovel && imovel.precoAluguel) {
-            // Se for aluguel, conta como venda também
-            totalVendas += imovel.precoAluguel;
-            vendasDetalhadas.push({
-                cliente: cliente.nome,
-                imovel: imovel.titulo,
-                valor: imovel.precoAluguel,
-                tipo: 'aluguel',
-                data: cliente.dataEntradaFunil
-            });
-        } else {
-            // Cliente sem imóvel vinculado ou sem preço
-            // Poderia ter um valor padrão ou ser ignorado
-            // Por enquanto, ignoramos
-        }
-    }
-    
-    return { totalVendas, vendasDetalhadas, quantidade: clientesVendaConcluida.length };
-}
 
             renderFunil: async () => {
                 const etapas = UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem);
@@ -5154,151 +5125,179 @@ getVendasMesFunil: () => {
                 };
             },
             
-generateSalesReport: (start, end) => {
-    // Filtra clientes na etapa "venda" dentro do período
-    const clientesVenda = UI.data.clientes.filter(cliente => {
-        if (cliente.etapaFunil !== 'venda') return false;
-        if (!cliente.dataEntradaFunil) return false;
-        
-        const dataConclusao = new Date(cliente.dataEntradaFunil);
-        return dataConclusao >= start && dataConclusao <= end;
-    });
-    
-    // Processa cada cliente para obter valores
-    const vendasDetalhadas = [];
-    let totalVendas = 0;
-    let totalComissao = 0;
-    
-    for (const cliente of clientesVenda) {
-        // Obtém o imóvel de interesse
-        const imovel = cliente.imovelInteresseId ? 
-            UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId) : null;
-        
-        let valorVenda = 0;
-        let tipoVenda = 'venda';
-        
-        if (imovel) {
-            if (imovel.precoVenda) {
-                valorVenda = imovel.precoVenda;
-            } else if (imovel.precoAluguel) {
-                valorVenda = imovel.precoAluguel;
-                tipoVenda = 'aluguel';
-            }
-        }
-        
-        // Calcula comissão personalizada
-        // Primeiro tenta obter comissão do cliente, depois das settings
-        const comissaoCliente = cliente.comissaoPersonalizada || UI.data.settings?.comissao || 5;
-        const valorComissao = (valorVenda * comissaoCliente) / 100;
-        
-        totalVendas += valorVenda;
-        totalComissao += valorComissao;
-        
-        vendasDetalhadas.push({
-            cliente: cliente.nome,
-            imovel: imovel?.titulo || 'Não especificado',
-            valor: valorVenda,
-            tipo: tipoVenda,
-            comissaoPercentual: comissaoCliente,
-            comissaoValor: valorComissao,
-            data: cliente.dataEntradaFunil,
-            telefone: cliente.telefone
-        });
-    }
-    
-    // Gera o HTML do relatório
-    let html = `
-        <div class="report-summary">
-            <h3>Relatório de Vendas por Funil</h3>
-            <p><strong>Período:</strong> ${Utils.formatDate(start.toISOString().split('T')[0])} a ${Utils.formatDate(end.toISOString().split('T')[0])}</p>
-            <p><strong>Total de Vendas Concluídas:</strong> ${clientesVenda.length}</p>
-            <p><strong>Valor Total das Vendas:</strong> ${Utils.formatCurrency(totalVendas)}</p>
-            <p><strong>Total de Comissões:</strong> ${Utils.formatCurrency(totalComissao)}</p>
-        </div>
-    `;
-    
-    if (vendasDetalhadas.length > 0) {
-        html += `
-            <div class="section-title">Detalhamento das Vendas</div>
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Cliente</th>
-                        <th>Imóvel</th>
-                        <th>Valor</th>
-                        <th>Comissão %</th>
-                        <th>Comissão R$</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        
-        vendasDetalhadas.forEach(venda => {
-            html += `
-                <tr>
-                    <td>${Utils.formatDate(venda.data)}</td>
-                    <td>${venda.cliente}</td>
-                    <td>${venda.imovel.substring(0, 30)}...</td>
-                    <td>${Utils.formatCurrency(venda.valor)}</td>
-                    <td>${venda.comissaoPercentual}%</td>
-                    <td>${Utils.formatCurrency(venda.comissaoValor)}</td>
-                </tr>
-            `;
-        });
-        
-        html += `
-                </tbody>
-            </table>
-        `;
-        
-        // Adiciona resumo por tipo
-        const resumoPorTipo = vendasDetalhadas.reduce((acc, venda) => {
-            acc[venda.tipo] = (acc[venda.tipo] || 0) + venda.valor;
-            return acc;
-        }, {});
-        
-        html += `
-            <div class="section-title">Resumo por Tipo</div>
-            <div class="stats-grid">
-        `;
-        
-        Object.entries(resumoPorTipo).forEach(([tipo, valor]) => {
-            html += `
-                <div class="stat-card">
-                    <div class="stat-icon ${tipo === 'venda' ? 'bg-green' : 'bg-blue'}">
-                        <i class="fas ${tipo === 'venda' ? 'fa-home' : 'fa-hand-holding-usd'}"></i>
+            generateSalesReport: (start, end) => {
+                const imoveisVendidos = UI.data.imoveis.filter(imovel => {
+                    if (!imovel.dataVenda) return false;
+                    const dataVenda = new Date(imovel.dataVenda);
+                    return dataVenda >= start && dataVenda <= end && (imovel.status === 'vendido' || imovel.status === 'alugado');
+                });
+                
+                const vendas = imoveisVendidos.filter(i => i.status === 'vendido');
+                const alugueis = imoveisVendidos.filter(i => i.status === 'alugado');
+                
+                const totalVendas = vendas.reduce((acc, i) => acc + (i.precoVenda || 0), 0);
+                const totalAlugueis = alugueis.reduce((acc, i) => acc + (i.precoAluguel || 0), 0);
+                const totalGeral = totalVendas + totalAlugueis;
+                
+                const vendasPorTipo = {};
+                imoveisVendidos.forEach(imovel => {
+                    const tipo = imovel.tipo;
+                    if (!vendasPorTipo[tipo]) {
+                        vendasPorTipo[tipo] = { quantidade: 0, valor: 0 };
+                    }
+                    vendasPorTipo[tipo].quantidade++;
+                    vendasPorTipo[tipo].valor += (imovel.precoVenda || imovel.precoAluguel || 0);
+                });
+                
+                let html = `
+                    <div class="report-summary">
+                        <h3>Relatório de Vendas</h3>
+                        <p><strong>Período:</strong> ${Utils.formatDate(start.toISOString().split('T')[0])} a ${Utils.formatDate(end.toISOString().split('T')[0])}</p>
+                        <p><strong>Total de Transações:</strong> ${imoveisVendidos.length}</p>
+                        <p><strong>Valor Total:</strong> ${Utils.formatCurrency(totalGeral)}</p>
                     </div>
-                    <div class="stat-value">${Utils.formatCurrency(valor)}</div>
-                    <div class="stat-label">${tipo === 'venda' ? 'Vendas' : 'Aluguéis'}</div>
-                </div>
-            `;
-        });
-        
-        html += `
-            </div>
-        `;
-    } else {
-        html += `
-            <div class="empty-state">
-                <i class="fas fa-chart-line"></i>
-                <p>Nenhuma venda concluída neste período</p>
-            </div>
-        `;
-    }
-    
-    return {
-        html,
-        data: {
-            periodo: `${Utils.formatDate(start.toISOString().split('T')[0])} a ${Utils.formatDate(end.toISOString().split('T')[0])}`,
-            totalVendas: totalVendas,
-            totalComissao: totalComissao,
-            quantidade: clientesVenda.length,
-            detalhes: vendasDetalhadas
-        },
-        type: 'vendas'
-    };
-}            
+                `;
+                
+                html += `
+                    <div class="section-title">Resumo Financeiro</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-green"><i class="fas fa-money-bill-wave"></i></div>
+                            <div class="stat-value">${Utils.formatCurrency(totalVendas)}</div>
+                            <div class="stat-label">Vendas</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-blue"><i class="fas fa-hand-holding-usd"></i></div>
+                            <div class="stat-value">${Utils.formatCurrency(totalAlugueis)}</div>
+                            <div class="stat-label">Aluguéis</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-orange"><i class="fas fa-chart-pie"></i></div>
+                            <div class="stat-value">${Utils.formatCurrency(totalGeral)}</div>
+                            <div class="stat-label">Total Geral</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon bg-purple"><i class="fas fa-bullseye"></i></div>
+                            <div class="stat-value">${imoveisVendidos.length}</div>
+                            <div class="stat-label">Transações</div>
+                        </div>
+                    </div>
+                `;
+                
+                html += `
+                    <div class="section-title">Vendas por Tipo de Imóvel</div>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Quantidade</th>
+                                <th>Valor Total</th>
+                                <th>Valor Médio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                Object.entries(vendasPorTipo).forEach(([tipo, dados]) => {
+                    const valorMedio = dados.quantidade > 0 ? dados.valor / dados.quantidade : 0;
+                    html += `
+                        <tr>
+                            <td>${Utils.getTipoText(tipo)}</td>
+                            <td>${dados.quantidade}</td>
+                            <td>${Utils.formatCurrency(dados.valor)}</td>
+                            <td>${Utils.formatCurrency(valorMedio)}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                        </tbody>
+                    </table>
+                `;
+                
+                const ultimasVendas = imoveisVendidos
+                    .sort((a, b) => new Date(b.dataVenda) - new Date(a.dataVenda))
+                    .slice(0, 10);
+                
+                if (ultimasVendas.length > 0) {
+                    html += `
+                        <div class="section-title">Últimas Transações</div>
+                        <table class="report-table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Imóvel</th>
+                                    <th>Tipo</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    ultimasVendas.forEach(imovel => {
+                        html += `
+                            <tr>
+                                <td>${Utils.formatDate(imovel.dataVenda)}</td>
+                                <td>${imovel.titulo.substring(0, 30)}...</td>
+                                <td>${Utils.getTipoText(imovel.tipo)}</td>
+                                <td>${Utils.formatCurrency(imovel.precoVenda || imovel.precoAluguel || 0)}</td>
+                                <td><span class="badge ${imovel.status === 'vendido' ? 'badge-success' : 'badge-primary'}">${Utils.getStatusText(imovel.status)}</span></td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                            </tbody>
+                        </table>
+                    `;
+                }
+                
+                Storage.getSettings().then(settings => {
+                    const taxaComissao = settings.comissao || 5;
+                    const comissao = (totalGeral * taxaComissao) / 100;
+                    
+                    html += `
+                        <div class="section-title">Projeção de Comissão</div>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon bg-cyan"><i class="fas fa-percentage"></i></div>
+                                <div class="stat-value">${taxaComissao}%</div>
+                                <div class="stat-label">Taxa</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-teal"><i class="fas fa-calculator"></i></div>
+                                <div class="stat-value">${Utils.formatCurrency(comissao)}</div>
+                                <div class="stat-label">Comissão</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                return {
+                    html,
+                    data: {
+                        periodo: `${Utils.formatDate(start.toISOString().split('T')[0])} a ${Utils.formatDate(end.toISOString().split('T')[0])}`,
+                        total: imoveisVendidos.length,
+                        dados: Object.entries(vendasPorTipo).map(([tipo, dados]) => ({
+                            tipo: Utils.getTipoText(tipo),
+                            quantidade: dados.quantidade,
+                            valor: Utils.formatCurrency(dados.valor),
+                            valorMedio: Utils.formatCurrency(dados.quantidade > 0 ? dados.valor / dados.quantidade : 0)
+                        })),
+                        headers: ['Tipo', 'Quantidade', 'Valor Total', 'Valor Médio'],
+                        resumo: {
+                            'Total de Transações': imoveisVendidos.length,
+                            'Vendas': Utils.formatCurrency(totalVendas),
+                            'Aluguéis': Utils.formatCurrency(totalAlugueis),
+                            'Total Geral': Utils.formatCurrency(totalGeral),
+                            'Média por Transação': imoveisVendidos.length > 0 ? Utils.formatCurrency(totalGeral / imoveisVendidos.length) : 'R$ 0,00'
+                        }
+                    },
+                    type: 'vendas'
+                };
+            },
+            
             generatePerformanceReport: (start, end) => {
                 const clientes = UI.data.clientes.filter(c => {
                     const dataCriacao = new Date(c.dataCriacao);
