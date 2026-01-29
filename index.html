@@ -173,6 +173,7 @@
         .stat-label { font-size: 0.8rem; color: var(--secondary); font-weight: 500; }
 
         .bg-blue { background: #dbeafe; color: var(--primary); }
+        .bg-warning { background: #fef3c7; color: var(--warning); }
         .bg-green { background: #d1fae5; color: var(--success); }
         .bg-orange { background: #ffedd5; color: var(--warning); }
         .bg-red { background: #fee2e2; color: var(--danger); }
@@ -1549,6 +1550,13 @@
                         <div class="stat-value" id="dash-vendas">R$ 0</div>
                         <div class="stat-label">Vendas Mês</div>
                     </div>
+                    <div class="stat-card" onclick="UI.navigate('funil')">
+                         <div class="stat-icon bg-warning">
+                         <i class="fas fa-handshake"></i>
+                    </div>
+                        <div class="stat-value" id="dash-total-negociacoes">R$ 0</div>
+                        <div class="stat-label">Em Negociação</div>
+                    </div>
                     <div class="stat-card">
                         <div class="stat-icon bg-cyan"><i class="fas fa-handshake"></i></div>
                         <div class="stat-value" id="dash-negociacoes">0</div>
@@ -1573,6 +1581,13 @@
                     <span class="badge badge-primary" id="visitas-badge" style="display:none">!</span>
                 </div>
                 <div id="visitas-list">
+                </div>
+                <div class="section-title">
+                    Negociações em Andamento
+                <span class="badge badge-warning" id="negociacoes-badge" style="display:none">!</span>
+                </div>
+                <div id="negociacoes-detalhadas-list">
+                <!-- As negociações serão carregadas aqui -->
                 </div>
                 
                 <div class="section-title">
@@ -3635,6 +3650,7 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                     }
                 });
                 
+                
                 // Também manter as vendas tradicionais por segurança
                 const vendasImoveisMes = imoveis.filter(i => {
                     if (!i.dataVenda) return false;
@@ -3677,7 +3693,29 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 
                 document.getElementById('visitas-badge').style.display = visitasHoje.length > 0 ? 'inline-block' : 'none';
                 document.getElementById('negociacoes-badge').style.display = imoveisReservados.length > 0 ? 'inline-block' : 'none';
+                // Procure o final da função renderDashboard
+                UI.renderNegociacoesDetalhadas();  // ADICIONE ESTA LINHA NO FINAL
             },
+            
+            // CÁLCULO DO VALOR TOTAL EM NEGOCIAÇÃO
+                let totalNegociacao = 0;
+                const clientesNegociacao = UI.data.clientes.filter(cliente => {
+                // Verifica se está na etapa de negociação (documentacao ou etapa personalizada)
+                // Você pode ajustar esta condição conforme sua necessidade
+                const etapaNegociacao = ['documentacao', 'negociacao', 'aprovado'].includes(cliente.etapaFunil);
+                return etapaNegociacao && cliente.imovelInteresseId;
+                });
+
+            clientesNegociacao.forEach(cliente => {
+                if (cliente.imovelInteresseId) {
+        const imovel = UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId);
+        if (imovel && imovel.precoVenda) {
+            totalNegociacao += imovel.precoVenda;
+                }
+                }
+            });
+
+document.getElementById('dash-total-negociacoes').innerText = Utils.formatCurrency(totalNegociacao);
 
             renderAniversariantes: () => {
                 const hoje = new Date();
@@ -3727,6 +3765,119 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                     badge.innerText = aniversariantes.length.toString();
                 }
             },
+                // Procure por esta função:
+renderAniversariantes: () => {
+    // ... código ...
+},
+
+// ADICIONE APÓS ESSA FUNÇÃO:
+renderNegociacoesDetalhadas: () => {
+    const container = document.getElementById('negociacoes-detalhadas-list');
+    if (!container) return;
+    
+    // Filtrar clientes em negociação
+    const clientesNegociacao = UI.data.clientes.filter(cliente => {
+        const etapasNegociacao = ['documentacao', 'negociacao', 'aprovado'];
+        return etapasNegociacao.includes(cliente.etapaFunil) && cliente.imovelInteresseId;
+    });
+    
+    if (clientesNegociacao.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-handshake"></i>
+                <p>Nenhuma negociação em andamento</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    let valorTotal = 0;
+    
+    clientesNegociacao.forEach(cliente => {
+        const imovel = UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId);
+        if (!imovel) return;
+        
+        const etapa = UI.data.funilEtapas.find(e => e.id === cliente.etapaFunil);
+        valorTotal += imovel.precoVenda || imovel.precoAluguel || 0;
+        
+        html += `
+            <div class="client-card" onclick="App.cliente.edit('${cliente.id}')">
+                <div class="client-header">
+                    <div class="client-name">${cliente.nome}</div>
+                    <span class="client-type" style="background: ${etapa?.cor || '#f59e0b'}; color: white;">
+                        ${etapa?.nome || 'Negociação'}
+                    </span>
+                </div>
+                <div class="client-info">
+                    <div class="client-row">
+                        <i class="fas fa-home"></i> 
+                        ${imovel.titulo.substring(0, 40)}...
+                    </div>
+                    <div class="client-row">
+                        <i class="fas fa-dollar-sign"></i> 
+                        Valor: ${Utils.formatCurrency(imovel.precoVenda || imovel.precoAluguel || 0)}
+                    </div>
+                    <div class="client-row">
+                        <i class="fas fa-calendar"></i> 
+                        Entrou na etapa: ${cliente.dataEntradaFunil ? Utils.formatDate(cliente.dataEntradaFunil) : 'Não informado'}
+                    </div>
+                </div>
+                <div class="client-actions">
+                    <button class="btn-whatsapp-client" onclick="event.stopPropagation(); App.cliente.whatsappPersonalizado('${cliente.id}')">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                    <button class="btn-sm btn-light" onclick="event.stopPropagation(); UI.avancarNegociacao('${cliente.id}')">
+                        <i class="fas fa-arrow-right"></i> Avançar
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    // Adicionar resumo no topo
+    const resumo = `
+        <div class="stat-card" style="margin-bottom: 16px;">
+            <div class="stat-icon bg-warning">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-value">${Utils.formatCurrency(valorTotal)}</div>
+            <div class="stat-label">Valor Total em Negociação</div>
+            <div style="font-size: 0.8rem; color: var(--secondary); margin-top: 4px;">
+                ${clientesNegociacao.length} ${clientesNegociacao.length === 1 ? 'negociação' : 'negociações'} ativas
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = resumo + html;
+    document.getElementById('negociacoes-andamento-badge').style.display = clientesNegociacao.length > 0 ? 'inline-block' : 'none';
+    document.getElementById('negociacoes-andamento-badge').innerText = clientesNegociacao.length.toString();
+},
+                avancarNegociacao: async (clienteId) => {
+    const cliente = UI.data.clientes.find(c => c.id === clienteId);
+    if (!cliente) return;
+    
+    const etapas = UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem);
+    const etapaAtualIndex = etapas.findIndex(e => e.id === cliente.etapaFunil);
+    
+    if (etapaAtualIndex < etapas.length - 1) {
+        const proximaEtapa = etapas[etapaAtualIndex + 1];
+        
+        if (confirm(`Avançar ${cliente.nome} para a etapa "${proximaEtapa.nome}"?`)) {
+            cliente.etapaFunil = proximaEtapa.id;
+            await DB.put('clientes', cliente);
+            UI.data.clientes = await Storage.getClientes();
+            
+            UI.renderDashboard();
+            UI.renderNegociacoesDetalhadas();
+            UI.renderFunil();
+            
+            Utils.toast(`${cliente.nome} avançado para ${proximaEtapa.nome}`);
+        }
+    } else {
+        Utils.toast('Cliente já está na última etapa', 'error');
+    }
+},
 
             renderFunil: async () => {
                 const etapas = UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem);
