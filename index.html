@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -2233,6 +2235,42 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
 
         <div class="modal-overlay" id="overlay-settings"></div>
         <div class="modal-sheet" id="sheet-settings">
+            <!-- Modal de Opções de Importação -->
+<div class="modal-overlay" id="overlay-import-options"></div>
+<div class="modal-sheet" id="sheet-import-options">
+    <div class="sheet-handle"></div>
+    <h3 class="section-title">Opções de Importação</h3>
+    
+    <div style="margin-bottom: 20px;">
+        <p style="color: var(--secondary); font-size: 0.9rem; margin-bottom: 16px;">
+            Selecione o tipo de importação:
+        </p>
+        
+        <button class="btn-block" style="background: var(--primary); margin-bottom: 10px;" onclick="App.backup.importData('full')">
+            <i class="fas fa-database"></i> Importar Backup Completo
+            <div style="font-size: 0.75rem; opacity: 0.8;">(Clientes, Imóveis, Agenda, Links, Configurações)</div>
+        </button>
+        
+        <button class="btn-block" style="background: var(--success); margin-bottom: 10px;" onclick="App.backup.importData('imoveis')">
+            <i class="fas fa-home"></i> Importar Apenas Imóveis
+            <div style="font-size: 0.75rem; opacity: 0.8;">(Apenas os dados de imóveis do backup)</div>
+        </button>
+        
+        <button class="btn-block" style="background: var(--accent); margin-bottom: 10px;" onclick="App.backup.importData('merge')">
+            <i class="fas fa-sync-alt"></i> Mesclar Dados
+            <div style="font-size: 0.75rem; opacity: 0.8;">(Adicionar sem excluir dados existentes)</div>
+        </button>
+    </div>
+    
+    <div class="warning-note" style="margin-top: 16px;">
+        <i class="fas fa-exclamation-triangle"></i> 
+        A importação pode substituir dados existentes. Recomenda-se fazer backup antes.
+    </div>
+    
+    <button class="btn-block" style="background: var(--light); color: var(--secondary); margin-top: 16px;" onclick="UI.closeModals()">
+        <i class="fas fa-times"></i> Cancelar
+    </button>
+</div>
             <div class="sheet-handle"></div>
             <h3 class="section-title">Configurações</h3>
             <form id="form-settings" onsubmit="App.settings.save(event)">
@@ -2263,38 +2301,37 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 </div>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 16px 0;">
-<div class="section-title" style="font-size: 1rem; margin-bottom: 10px;">Backup Geral</div>
-<div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-    <button type="button" class="btn-block" style="background: var(--secondary); margin: 0;" onclick="App.backup.importTrigger()">
-        <i class="fas fa-file-import"></i> Importar Tudo
-    </button>
-    <input type="file" id="import-file" style="display: none;" accept=".json" onchange="App.backup.importData(this)">
-    <button type="button" class="btn-block" style="background: var(--primary); margin: 0;" onclick="App.backup.exportData()">
-        <i class="fas fa-file-export"></i> Exportar Tudo
-    </button>
+
+<div class="form-group">
+    <label class="form-label" style="margin-bottom: 12px;">Backup e Restauração</label>
+    
+    <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn-block" style="background: var(--secondary); margin: 0;" onclick="UI.openImportOptions()">
+            <i class="fas fa-file-import"></i> Importar Backup
+        </button>
+        
+        <button type="button" class="btn-block" style="background: var(--primary); margin: 0;" onclick="App.backup.exportData()">
+            <i class="fas fa-file-export"></i> Exportar Backup
+        </button>
+        
+        <button type="button" class="btn-block" style="background: var(--accent); margin: 0;" onclick="App.backup.exportOnlyImoveis()">
+            <i class="fas fa-home"></i> Exportar Apenas Imóveis
+        </button>
+    </div>
 </div>
 
-<hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
-<div class="section-title" style="font-size: 1rem; margin-bottom: 10px;">Backup Específico de Imóveis</div>
-<div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-    <button type="button" class="btn-block" style="background: #10b981; margin: 0;" onclick="App.backup.importImoveisTrigger()">
-        <i class="fas fa-file-import"></i> Importar Imóveis
-    </button>
-    <input type="file" id="import-imoveis-file" style="display: none;" accept=".json" onchange="App.backup.importImoveisData(this)">
-    <button type="button" class="btn-block" style="background: #3b82f6; margin: 0;" onclick="App.backup.exportImoveisData()">
-        <i class="fas fa-file-export"></i> Exportar Imóveis
-    </button>
-</div>
+<!-- Input file oculto para importação -->
+<input type="file" id="import-file" style="display: none;" accept=".json" onchange="App.backup.processImportFile(this)">
 
-<div class="warning-note" style="margin-top: 15px; text-align: left;">
-    <i class="fas fa-info-circle"></i> <strong>Dica:</strong> Use "Exportar Imóveis" para fazer backup apenas dos imóveis. 
-    Use "Importar Imóveis" para restaurar em outro dispositivo.
-</div>
-
-<div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-    <button type="button" class="btn-block" style="background: var(--accent); margin: 0;" onclick="App.backup.exportIOS()">
-        <i class="fab fa-apple"></i> iOS
-    </button>
+<div class="form-group">
+    <div class="warning-note" style="margin-top: 20px;">
+        <i class="fas fa-info-circle"></i> 
+        <strong>Dicas de Importação/Exportação:</strong><br>
+        • Use "Exportar Apenas Imóveis" para compartilhar somente o catálogo<br>
+        • Use "Importar Apenas Imóveis" para atualizar o catálogo em outro aparelho<br>
+        • Backup completo inclui todos os dados do sistema<br>
+        • Os arquivos são compatíveis entre iOS, Android e computadores
+    </div>
 </div>
 
                 <button type="button" class="btn-block" style="background: var(--danger); margin-top: 10px;" onclick="App.backup.clearData()">
@@ -6015,6 +6052,29 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                     endInput.style.display = 'block';
                 }
             }
+            },
+
+openImportOptions: () => {
+    UI.openModal('import-options');
+},
+
+showImportProgress: (message) => {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    
+    toast.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${message}</span>`;
+    toast.style.background = 'var(--primary)';
+    toast.classList.add('show');
+},
+
+hideImportProgress: () => {
+    setTimeout(() => {
+        const toast = document.getElementById('toast');
+        if (toast) {
+            toast.classList.remove('show');
+        }
+    }, 1000);
+},
 
         };
 
@@ -6913,7 +6973,313 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
             },
             
             backup: {
-    exportData: () => {
+    // Função para abrir as opções de importação
+    importData: (type) => {
+        UI.closeModals();
+        
+        // Armazenar o tipo de importação selecionado
+        this.importType = type;
+        
+        // Mostrar mensagem baseada no tipo
+        let message = '';
+        switch(type) {
+            case 'full':
+                message = '⚠️ ATENÇÃO: Esta operação irá SOBRESCREVER todos os dados atuais. Deseja continuar?';
+                break;
+            case 'imoveis':
+                message = '⚠️ ATENÇÃO: Esta operação irá substituir todos os imóveis atuais pelos do backup. Deseja continuar?';
+                break;
+            case 'merge':
+                message = '⚠️ ATENÇÃO: Esta operação irá adicionar os dados do backup sem excluir os existentes. Deseja continuar?';
+                break;
+        }
+        
+        if (confirm(message)) {
+            // Acionar o input file para selecionar o arquivo
+            document.getElementById('import-file').click();
+        } else {
+            this.importType = null;
+        }
+    },
+    
+    // Processar o arquivo selecionado
+    processImportFile: async (input) => {
+        const file = input.files[0];
+        if (!file) {
+            this.importType = null;
+            return;
+        }
+        
+        const importType = this.importType || 'full';
+        this.importType = null;
+        
+        try {
+            UI.showImportProgress('Processando arquivo de backup...');
+            
+            const text = await file.text();
+            const backupData = JSON.parse(text);
+            
+            if (!backupData.app || backupData.app !== 'ImobiPro') {
+                throw new Error('Arquivo de backup inválido ou de versão incompatível');
+            }
+            
+            // Processar conforme o tipo de importação
+            switch(importType) {
+                case 'full':
+                    await this.importFullBackup(backupData);
+                    break;
+                case 'imoveis':
+                    await this.importOnlyImoveis(backupData);
+                    break;
+                case 'merge':
+                    await this.importMergeBackup(backupData);
+                    break;
+            }
+            
+            // Atualizar a UI
+            await this.refreshAllData();
+            
+            Utils.toast(`Importação ${importType === 'merge' ? 'mesclada' : 'concluída'} com sucesso!`);
+            
+        } catch (error) {
+            console.error('Erro ao importar backup:', error);
+            Utils.toast('Erro ao importar backup. Arquivo inválido ou corrompido.', 'error');
+        } finally {
+            input.value = '';
+            UI.hideImportProgress();
+        }
+    },
+    
+    // Importar backup completo (substitui tudo)
+    importFullBackup: async (backupData) => {
+        // Limpar todos os dados existentes
+        await DB.clear('clientes');
+        await DB.clear('imoveis');
+        await DB.clear('visitas');
+        await DB.clear('links');
+        await DB.clear('funilEtapas');
+        
+        // Importar clientes
+        if (backupData.clientes && Array.isArray(backupData.clientes)) {
+            for (const cliente of backupData.clientes) {
+                // Garantir que tenha dataEntradaFunil
+                if (!cliente.dataEntradaFunil) {
+                    cliente.dataEntradaFunil = cliente.dataCriacao ? 
+                        cliente.dataCriacao.split('T')[0] : 
+                        new Date().toISOString().split('T')[0];
+                }
+                await DB.put('clientes', cliente);
+            }
+        }
+        
+        // Importar imóveis
+        if (backupData.imoveis && Array.isArray(backupData.imoveis)) {
+            for (const imovel of backupData.imoveis) {
+                // Garantir que tenha array de vídeos
+                if (!imovel.videos) {
+                    imovel.videos = [];
+                }
+                await DB.put('imoveis', imovel);
+            }
+        }
+        
+        // Importar visitas
+        if (backupData.visitas && Array.isArray(backupData.visitas)) {
+            for (const visita of backupData.visitas) {
+                await DB.put('visitas', visita);
+            }
+        }
+        
+        // Importar links
+        if (backupData.links && Array.isArray(backupData.links)) {
+            for (const link of backupData.links) {
+                await DB.put('links', link);
+            }
+        }
+        
+        // Importar etapas do funil
+        if (backupData.funilEtapas && Array.isArray(backupData.funilEtapas)) {
+            for (const etapa of backupData.funilEtapas) {
+                await DB.put('funilEtapas', etapa);
+            }
+        }
+        
+        // Importar configurações se existirem
+        if (backupData.settings) {
+            await DB.put('settings', backupData.settings);
+        }
+    },
+    
+    // Importar apenas imóveis
+    importOnlyImoveis: async (backupData) => {
+        if (!backupData.imoveis || !Array.isArray(backupData.imoveis)) {
+            throw new Error('Arquivo não contém dados de imóveis');
+        }
+        
+        // Limpar apenas os imóveis existentes
+        await DB.clear('imoveis');
+        
+        // Importar os novos imóveis
+        for (const imovel of backupData.imoveis) {
+            // Garantir que tenha array de vídeos
+            if (!imovel.videos) {
+                imovel.videos = [];
+            }
+            await DB.put('imoveis', imovel);
+        }
+        
+        // Se o backup tiver configurações de imobiliária, podemos atualizar
+        if (backupData.settings && backupData.settings.imobiliaria) {
+            const currentSettings = await DB.get('settings', 'main') || {};
+            const updatedSettings = {
+                ...currentSettings,
+                imobiliaria: backupData.settings.imobiliaria
+            };
+            await DB.put('settings', updatedSettings);
+        }
+    },
+    
+    // Mesclar dados (adicionar sem excluir)
+    importMergeBackup: async (backupData) => {
+        // Mesclar clientes (evitar duplicados por ID)
+        if (backupData.clientes && Array.isArray(backupData.clientes)) {
+            const existingClientes = await DB.getAll('clientes');
+            const existingIds = existingClientes.map(c => c.id);
+            
+            for (const cliente of backupData.clientes) {
+                // Se não existir, adicionar
+                if (!existingIds.includes(cliente.id)) {
+                    if (!cliente.dataEntradaFunil) {
+                        cliente.dataEntradaFunil = cliente.dataCriacao ? 
+                            cliente.dataCriacao.split('T')[0] : 
+                            new Date().toISOString().split('T')[0];
+                    }
+                    await DB.put('clientes', cliente);
+                }
+            }
+        }
+        
+        // Mesclar imóveis (evitar duplicados por ID)
+        if (backupData.imoveis && Array.isArray(backupData.imoveis)) {
+            const existingImoveis = await DB.getAll('imoveis');
+            const existingIds = existingImoveis.map(i => i.id);
+            
+            for (const imovel of backupData.imoveis) {
+                // Se não existir, adicionar
+                if (!existingIds.includes(imovel.id)) {
+                    if (!imovel.videos) {
+                        imovel.videos = [];
+                    }
+                    await DB.put('imoveis', imovel);
+                }
+            }
+        }
+        
+        // Mesclar visitas
+        if (backupData.visitas && Array.isArray(backupData.visitas)) {
+            const existingVisitas = await DB.getAll('visitas');
+            const existingIds = existingVisitas.map(v => v.id);
+            
+            for (const visita of backupData.visitas) {
+                if (!existingIds.includes(visita.id)) {
+                    await DB.put('visitas', visita);
+                }
+            }
+        }
+        
+        // Mesclar links
+        if (backupData.links && Array.isArray(backupData.links)) {
+            const existingLinks = await DB.getAll('links');
+            const existingIds = existingLinks.map(l => l.id);
+            
+            for (const link of backupData.links) {
+                if (!existingIds.includes(link.id)) {
+                    await DB.put('links', link);
+                }
+            }
+        }
+        
+        // Mesclar etapas do funil
+        if (backupData.funilEtapas && Array.isArray(backupData.funilEtapas)) {
+            const existingEtapas = await DB.getAll('funilEtapas');
+            const existingIds = existingEtapas.map(e => e.id);
+            
+            for (const etapa of backupData.funilEtapas) {
+                if (!existingIds.includes(etapa.id)) {
+                    await DB.put('funilEtapas', etapa);
+                }
+            }
+        }
+        
+        // Mesclar configurações (manter as atuais, exceto se não existirem)
+        if (backupData.settings) {
+            const currentSettings = await DB.get('settings', 'main') || {};
+            const mergedSettings = {
+                ...currentSettings,
+                ...backupData.settings,
+                id: 'main' // Garantir que o ID não mude
+            };
+            await DB.put('settings', mergedSettings);
+        }
+    },
+    
+    // Exportar apenas imóveis
+    exportOnlyImoveis: async () => {
+        try {
+            const imoveis = await DB.getAll('imoveis');
+            const settings = await DB.get('settings', 'main') || {};
+            
+            const exportData = {
+                imoveis: imoveis,
+                settings: {
+                    imobiliaria: settings.imobiliaria || 'Resende',
+                    nome: settings.nome || 'Corretor',
+                    telefone: settings.telefone || '(82) 99662-2036'
+                },
+                exportDate: new Date().toISOString(),
+                version: '1.0',
+                app: 'ImobiPro',
+                exportType: 'imoveis_only'
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `imobipro_imoveis_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            Utils.toast('Imóveis exportados com sucesso!');
+            
+        } catch (error) {
+            console.error('Erro ao exportar imóveis:', error);
+            Utils.toast('Erro ao exportar imóveis', 'error');
+        }
+    },
+    
+    // Função auxiliar para atualizar todos os dados na UI
+    refreshAllData: async () => {
+        UI.data.clientes = await Storage.getClientes();
+        UI.data.imoveis = await Storage.getImoveis();
+        UI.data.visitas = await Storage.getVisitas();
+        UI.data.links = await Storage.getLinks();
+        UI.data.funilEtapas = await Storage.getFunilEtapas();
+        
+        UI.renderClientes();
+        UI.renderImoveis();
+        UI.renderAgenda();
+        UI.renderLinks();
+        UI.renderDashboard();
+        UI.renderFunil();
+    },
+    
+    // Manter funções existentes (exportData, exportIOS, clearData)
+    exportData: function() {
         try {
             const data = {
                 clientes: UI.data.clientes,
@@ -6951,90 +7317,7 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
         }
     },
     
-    importTrigger: () => {
-        document.getElementById('import-file').click();
-    },
-    
-    importData: async (input) => {
-        const file = input.files[0];
-        if (!file) return;
-        
-        if (!confirm('⚠️ ATENÇÃO: Importar backup irá SOBRESCREVER todos os dados atuais. Deseja continuar?')) {
-            input.value = '';
-            return;
-        }
-        
-        try {
-            const text = await file.text();
-            const data = JSON.parse(text);
-            
-            if (!data.app || data.app !== 'ImobiPro') {
-                throw new Error('Arquivo de backup inválido');
-            }
-            
-            if (data.clientes && Array.isArray(data.clientes)) {
-                await DB.clear('clientes');
-                for (const cliente of data.clientes) {
-                    await DB.add('clientes', cliente);
-                }
-            }
-            
-            if (data.imoveis && Array.isArray(data.imoveis)) {
-                await DB.clear('imoveis');
-                for (const imovel of data.imoveis) {
-                    await DB.add('imoveis', imovel);
-                }
-            }
-            
-            if (data.visitas && Array.isArray(data.visitas)) {
-                await DB.clear('visitas');
-                for (const visita of data.visitas) {
-                    await DB.add('visitas', visita);
-                }
-            }
-            
-            if (data.links && Array.isArray(data.links)) {
-                await DB.clear('links');
-                for (const link of data.links) {
-                    await DB.add('links', link);
-                }
-            }
-            
-            if (data.settings) {
-                await DB.put('settings', data.settings);
-            }
-            
-            if (data.funilEtapas && Array.isArray(data.funilEtapas)) {
-                await DB.clear('funilEtapas');
-                for (const etapa of data.funilEtapas) {
-                    await DB.add('funilEtapas', etapa);
-                }
-            }
-            
-            UI.data.clientes = await Storage.getClientes();
-            UI.data.imoveis = await Storage.getImoveis();
-            UI.data.visitas = await Storage.getVisitas();
-            UI.data.links = await Storage.getLinks();
-            UI.data.funilEtapas = await Storage.getFunilEtapas();
-            
-            UI.renderClientes();
-            UI.renderImoveis();
-            UI.renderAgenda();
-            UI.renderLinks();
-            UI.renderDashboard();
-            UI.renderFunil();
-            
-            Utils.toast('Backup importado com sucesso!');
-            
-        } catch (error) {
-            console.error('Erro ao importar backup:', error);
-            Utils.toast('Erro ao importar backup. Arquivo inválido.', 'error');
-        }
-        
-        input.value = '';
-    },
-    
-    exportIOS: () => {
+    exportIOS: function() {
         try {
             const data = {
                 clientes: UI.data.clientes,
@@ -7105,7 +7388,7 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 { id: 'sem-restricao', nome: 'Sem Restrição', cor: '#1d4ed8', ordem: 4 },
                 { id: 'documentacao', nome: 'Documentação', cor: '#7c3aed', ordem: 5 },
                 { id: 'aprovado', nome: 'Aprovado', cor: '#10b981', ordem: 6 },
-                { id: 'contrato', nome: 'Contrato Assinado', cor: '#059669', ordem: 7 },
+                { id: 'contrato', nome: 'Contrato Assinado', ord: '#059669', ordem: 7 },
                 { id: 'venda', nome: 'Venda Concluída', cor: '#047857', ordem: 8 }
             ];
             
@@ -7133,7 +7416,7 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
             Utils.toast('Erro ao resetar dados', 'error');
         }
     }
-}
+},
 
         // Inicialização da aplicação
         document.addEventListener('DOMContentLoaded', () => {
