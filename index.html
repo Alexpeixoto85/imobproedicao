@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -173,7 +175,6 @@
         .stat-label { font-size: 0.8rem; color: var(--secondary); font-weight: 500; }
 
         .bg-blue { background: #dbeafe; color: var(--primary); }
-        .bg-warning { background: #fef3c7; color: var(--warning); }
         .bg-green { background: #d1fae5; color: var(--success); }
         .bg-orange { background: #ffedd5; color: var(--warning); }
         .bg-red { background: #fee2e2; color: var(--danger); }
@@ -1550,13 +1551,6 @@
                         <div class="stat-value" id="dash-vendas">R$ 0</div>
                         <div class="stat-label">Vendas Mês</div>
                     </div>
-                    <div class="stat-card" onclick="UI.navigate('funil')">
-                         <div class="stat-icon bg-warning">
-                         <i class="fas fa-handshake"></i>
-                    </div>
-                        <div class="stat-value" id="dash-total-negociacoes">R$ 0</div>
-                        <div class="stat-label">Em Negociação</div>
-                    </div>
                     <div class="stat-card">
                         <div class="stat-icon bg-cyan"><i class="fas fa-handshake"></i></div>
                         <div class="stat-value" id="dash-negociacoes">0</div>
@@ -1581,13 +1575,6 @@
                     <span class="badge badge-primary" id="visitas-badge" style="display:none">!</span>
                 </div>
                 <div id="visitas-list">
-                </div>
-                <div class="section-title">
-                    Negociações em Andamento
-                <span class="badge badge-warning" id="negociacoes-badge" style="display:none">!</span>
-                </div>
-                <div id="negociacoes-detalhadas-list">
-                <!-- As negociações serão carregadas aqui -->
                 </div>
                 
                 <div class="section-title">
@@ -2278,14 +2265,35 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 </div>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 16px 0;">
+<div class="section-title" style="font-size: 1rem; margin-bottom: 10px;">Backup Geral</div>
 <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
     <button type="button" class="btn-block" style="background: var(--secondary); margin: 0;" onclick="App.backup.importTrigger()">
-        <i class="fas fa-file-import"></i> Importar Backup
+        <i class="fas fa-file-import"></i> Importar Tudo
     </button>
     <input type="file" id="import-file" style="display: none;" accept=".json" onchange="App.backup.importData(this)">
     <button type="button" class="btn-block" style="background: var(--primary); margin: 0;" onclick="App.backup.exportData()">
-        <i class="fas fa-file-export"></i> Exportar Backup
+        <i class="fas fa-file-export"></i> Exportar Tudo
     </button>
+</div>
+
+<hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
+<div class="section-title" style="font-size: 1rem; margin-bottom: 10px;">Backup Específico de Imóveis</div>
+<div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+    <button type="button" class="btn-block" style="background: #10b981; margin: 0;" onclick="App.backup.importImoveisTrigger()">
+        <i class="fas fa-file-import"></i> Importar Imóveis
+    </button>
+    <input type="file" id="import-imoveis-file" style="display: none;" accept=".json" onchange="App.backup.importImoveisData(this)">
+    <button type="button" class="btn-block" style="background: #3b82f6; margin: 0;" onclick="App.backup.exportImoveisData()">
+        <i class="fas fa-file-export"></i> Exportar Imóveis
+    </button>
+</div>
+
+<div class="warning-note" style="margin-top: 15px; text-align: left;">
+    <i class="fas fa-info-circle"></i> <strong>Dica:</strong> Use "Exportar Imóveis" para fazer backup apenas dos imóveis. 
+    Use "Importar Imóveis" para restaurar em outro dispositivo.
+</div>
+
+<div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
     <button type="button" class="btn-block" style="background: var(--accent); margin: 0;" onclick="App.backup.exportIOS()">
         <i class="fab fa-apple"></i> iOS
     </button>
@@ -3650,7 +3658,6 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                     }
                 });
                 
-                
                 // Também manter as vendas tradicionais por segurança
                 const vendasImoveisMes = imoveis.filter(i => {
                     if (!i.dataVenda) return false;
@@ -3693,29 +3700,7 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 
                 document.getElementById('visitas-badge').style.display = visitasHoje.length > 0 ? 'inline-block' : 'none';
                 document.getElementById('negociacoes-badge').style.display = imoveisReservados.length > 0 ? 'inline-block' : 'none';
-                // Procure o final da função renderDashboard
-                UI.renderNegociacoesDetalhadas();  // ADICIONE ESTA LINHA NO FINAL
             },
-            
-            // CÁLCULO DO VALOR TOTAL EM NEGOCIAÇÃO
-                let totalNegociacao = 0;
-                const clientesNegociacao = UI.data.clientes.filter(cliente => {
-                // Verifica se está na etapa de negociação (documentacao ou etapa personalizada)
-                // Você pode ajustar esta condição conforme sua necessidade
-                const etapaNegociacao = ['documentacao', 'negociacao', 'aprovado'].includes(cliente.etapaFunil);
-                return etapaNegociacao && cliente.imovelInteresseId;
-                });
-
-            clientesNegociacao.forEach(cliente => {
-                if (cliente.imovelInteresseId) {
-        const imovel = UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId);
-        if (imovel && imovel.precoVenda) {
-            totalNegociacao += imovel.precoVenda;
-                }
-                }
-            });
-
-document.getElementById('dash-total-negociacoes').innerText = Utils.formatCurrency(totalNegociacao);
 
             renderAniversariantes: () => {
                 const hoje = new Date();
@@ -3765,119 +3750,6 @@ document.getElementById('dash-total-negociacoes').innerText = Utils.formatCurren
                     badge.innerText = aniversariantes.length.toString();
                 }
             },
-                // Procure por esta função:
-renderAniversariantes: () => {
-    // ... código ...
-},
-
-// ADICIONE APÓS ESSA FUNÇÃO:
-renderNegociacoesDetalhadas: () => {
-    const container = document.getElementById('negociacoes-detalhadas-list');
-    if (!container) return;
-    
-    // Filtrar clientes em negociação
-    const clientesNegociacao = UI.data.clientes.filter(cliente => {
-        const etapasNegociacao = ['documentacao', 'negociacao', 'aprovado'];
-        return etapasNegociacao.includes(cliente.etapaFunil) && cliente.imovelInteresseId;
-    });
-    
-    if (clientesNegociacao.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-handshake"></i>
-                <p>Nenhuma negociação em andamento</p>
-            </div>
-        `;
-        return;
-    }
-    
-    let html = '';
-    let valorTotal = 0;
-    
-    clientesNegociacao.forEach(cliente => {
-        const imovel = UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId);
-        if (!imovel) return;
-        
-        const etapa = UI.data.funilEtapas.find(e => e.id === cliente.etapaFunil);
-        valorTotal += imovel.precoVenda || imovel.precoAluguel || 0;
-        
-        html += `
-            <div class="client-card" onclick="App.cliente.edit('${cliente.id}')">
-                <div class="client-header">
-                    <div class="client-name">${cliente.nome}</div>
-                    <span class="client-type" style="background: ${etapa?.cor || '#f59e0b'}; color: white;">
-                        ${etapa?.nome || 'Negociação'}
-                    </span>
-                </div>
-                <div class="client-info">
-                    <div class="client-row">
-                        <i class="fas fa-home"></i> 
-                        ${imovel.titulo.substring(0, 40)}...
-                    </div>
-                    <div class="client-row">
-                        <i class="fas fa-dollar-sign"></i> 
-                        Valor: ${Utils.formatCurrency(imovel.precoVenda || imovel.precoAluguel || 0)}
-                    </div>
-                    <div class="client-row">
-                        <i class="fas fa-calendar"></i> 
-                        Entrou na etapa: ${cliente.dataEntradaFunil ? Utils.formatDate(cliente.dataEntradaFunil) : 'Não informado'}
-                    </div>
-                </div>
-                <div class="client-actions">
-                    <button class="btn-whatsapp-client" onclick="event.stopPropagation(); App.cliente.whatsappPersonalizado('${cliente.id}')">
-                        <i class="fab fa-whatsapp"></i> WhatsApp
-                    </button>
-                    <button class="btn-sm btn-light" onclick="event.stopPropagation(); UI.avancarNegociacao('${cliente.id}')">
-                        <i class="fas fa-arrow-right"></i> Avançar
-                    </button>
-                </div>
-            </div>
-        `;
-    });
-    
-    // Adicionar resumo no topo
-    const resumo = `
-        <div class="stat-card" style="margin-bottom: 16px;">
-            <div class="stat-icon bg-warning">
-                <i class="fas fa-chart-line"></i>
-            </div>
-            <div class="stat-value">${Utils.formatCurrency(valorTotal)}</div>
-            <div class="stat-label">Valor Total em Negociação</div>
-            <div style="font-size: 0.8rem; color: var(--secondary); margin-top: 4px;">
-                ${clientesNegociacao.length} ${clientesNegociacao.length === 1 ? 'negociação' : 'negociações'} ativas
-            </div>
-        </div>
-    `;
-    
-    container.innerHTML = resumo + html;
-    document.getElementById('negociacoes-andamento-badge').style.display = clientesNegociacao.length > 0 ? 'inline-block' : 'none';
-    document.getElementById('negociacoes-andamento-badge').innerText = clientesNegociacao.length.toString();
-},
-                avancarNegociacao: async (clienteId) => {
-    const cliente = UI.data.clientes.find(c => c.id === clienteId);
-    if (!cliente) return;
-    
-    const etapas = UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem);
-    const etapaAtualIndex = etapas.findIndex(e => e.id === cliente.etapaFunil);
-    
-    if (etapaAtualIndex < etapas.length - 1) {
-        const proximaEtapa = etapas[etapaAtualIndex + 1];
-        
-        if (confirm(`Avançar ${cliente.nome} para a etapa "${proximaEtapa.nome}"?`)) {
-            cliente.etapaFunil = proximaEtapa.id;
-            await DB.put('clientes', cliente);
-            UI.data.clientes = await Storage.getClientes();
-            
-            UI.renderDashboard();
-            UI.renderNegociacoesDetalhadas();
-            UI.renderFunil();
-            
-            Utils.toast(`${cliente.nome} avançado para ${proximaEtapa.nome}`);
-        }
-    } else {
-        Utils.toast('Cliente já está na última etapa', 'error');
-    }
-},
 
             renderFunil: async () => {
                 const etapas = UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem);
@@ -7044,7 +6916,11 @@ renderNegociacoesDetalhadas: () => {
             
             backup: {
                 exportData: () => {
-                    try {
+                    if (!confirm('Isso exportará TODOS os dados (clientes, imóveis, agendamentos, etc).\n\nPara exportar apenas imóveis, use o botão "Exportar Imóveis".\n\nContinuar?')) {
+        return;
+    }
+    
+    try {
                         const data = {
                             clientes: UI.data.clientes,
                             imoveis: UI.data.imoveis,
@@ -7080,6 +6956,115 @@ renderNegociacoesDetalhadas: () => {
                         Utils.toast('Erro ao exportar backup', 'error');
                     }
                 },
+                // NOVA FUNÇÃO: Acionar importação de imóveis
+importImoveisTrigger: () => {
+    document.getElementById('import-imoveis-file').click();
+},
+
+// NOVA FUNÇÃO: Importar apenas imóveis
+importImoveisData: async (input) => {
+    const file = input.files[0];
+    if (!file) return;
+    
+    try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        
+        // Verificar se é um arquivo de backup de imóveis
+        if (!data.type || data.type !== 'imoveis-only') {
+            if (!confirm('⚠️ Este arquivo não parece ser um backup específico de imóveis.\nDeseja continuar mesmo assim?\n\nArquivos de backup de imóveis devem ter o campo "type": "imoveis-only"')) {
+                input.value = '';
+                return;
+            }
+        }
+        
+        if (!data.imoveis || !Array.isArray(data.imoveis)) {
+            throw new Error('Arquivo não contém dados válidos de imóveis');
+        }
+        
+        // Perguntar como importar
+        const importOption = prompt(
+            'Como deseja importar os imóveis?\n\n' +
+            '1. Adicionar aos imóveis existentes (não substitui imóveis duplicados)\n' +
+            '2. Substituir todos os imóveis atuais\n\n' +
+            'Digite 1 ou 2:'
+        );
+        
+        if (!importOption) {
+            input.value = '';
+            return;
+        }
+        
+        if (importOption === '2') {
+            // Opção 2: Substituir todos os imóveis
+            if (!confirm('🚨 ATENÇÃO: Isso irá REMOVER TODOS os imóveis atuais e substituí-los pelos do backup.\n\nDeseja continuar?')) {
+                input.value = '';
+                return;
+            }
+            
+            await DB.clear('imoveis');
+            for (const imovel of data.imoveis) {
+                // Gerar novo ID para evitar conflitos
+                const novoImovel = {
+                    ...imovel,
+                    id: Utils.id(), // Novo ID único
+                    dataAtualizacao: new Date().toISOString(),
+                    dataCriacao: imovel.dataCriacao || new Date().toISOString()
+                };
+                await DB.add('imoveis', novoImovel);
+            }
+            
+            Utils.toast(`Todos os imóveis foram substituídos! ${data.imoveis.length} imóveis importados.`);
+            
+        } else {
+            // Opção 1: Adicionar aos existentes (padrão)
+            let novosImoveis = 0;
+            let imoveisAtualizados = 0;
+            
+            for (const imovel of data.imoveis) {
+                // Verificar se imóvel já existe (por título e endereço)
+                const imovelExistente = UI.data.imoveis.find(
+                    i => i.titulo === imovel.titulo && i.endereco === imovel.endereco
+                );
+                
+                if (imovelExistente) {
+                    // Atualizar imóvel existente
+                    const imovelAtualizado = {
+                        ...imovelExistente,
+                        ...imovel,
+                        id: imovelExistente.id, // Manter ID original
+                        dataAtualizacao: new Date().toISOString()
+                    };
+                    await DB.put('imoveis', imovelAtualizado);
+                    imoveisAtualizados++;
+                } else {
+                    // Adicionar novo imóvel
+                    const novoImovel = {
+                        ...imovel,
+                        id: Utils.id(), // Novo ID único
+                        dataCriacao: imovel.dataCriacao || new Date().toISOString(),
+                        dataAtualizacao: new Date().toISOString()
+                    };
+                    await DB.add('imoveis', novoImovel);
+                    novosImoveis++;
+                }
+            }
+            
+            Utils.toast(`${novosImoveis} novos imóveis adicionados e ${imoveisAtualizados} imóveis atualizados!`);
+        }
+        
+        // Atualizar dados e interface
+        UI.data.imoveis = await Storage.getImoveis();
+        UI.renderImoveis();
+        UI.renderDashboard();
+        
+    } catch (error) {
+        console.error('Erro ao importar backup de imóveis:', error);
+        Utils.toast('Erro ao importar backup de imóveis. Verifique se o arquivo é válido.', 'error');
+    }
+    
+    input.value = '';
+},
                 
                 importTrigger: () => {
                     document.getElementById('import-file').click();
