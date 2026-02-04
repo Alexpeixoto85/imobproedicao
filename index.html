@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -6916,7 +6914,12 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
             
             backup: {
                 exportData: () => {
-                    try {
+                    exportData: () => {
+    if (!confirm('Isso exportará TODOS os dados (clientes, imóveis, agendamentos, etc).\n\nPara exportar apenas imóveis, use o botão "Exportar Imóveis".\n\nContinuar?')) {
+        return;
+    }
+    
+    try {
                         const data = {
                             clientes: UI.data.clientes,
                             imoveis: UI.data.imoveis,
