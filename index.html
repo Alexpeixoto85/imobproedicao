@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -1844,6 +1844,11 @@
 
         <div class="modal-overlay" id="overlay-imovel"></div>
         <div class="modal-sheet" id="sheet-imovel">
+            <!-- Após os campos de preço (aprox. linha 1480-1490) -->
+<div class="form-group">
+    <label class="form-label">Comissão do Corretor (%)</label>
+    <input type="number" id="i-comissao" class="form-control" placeholder="Ex: 5" min="0" max="100" step="0.1">
+</div>
             <div class="sheet-handle"></div>
             <h3 class="section-title" id="title-imovel">Novo Imóvel</h3>
             <form id="form-imovel" onsubmit="App.imovel.save(event)">
@@ -1915,6 +1920,10 @@
                         <input type="text" id="i-preco-aluguel" class="form-control" placeholder="0,00" oninput="Utils.maskMoney(this)">
                     </div>
                 </div>
+                <div class="form-group">
+    <label class="form-label">Comissão do Corretor (%)</label>
+    <input type="number" id="i-comissao" class="form-control" placeholder="Ex: 5" min="0" max="100" step="0.1">
+</div>
 
                 <div class="form-group">
                     <label class="form-label">Data de Entrega</label>
@@ -4506,6 +4515,10 @@ renderDashboard: () => {
                                     <div class="info-label">Data da Venda</div>
                                     <div class="info-value">${Utils.formatDate(i.dataVenda)}</div>
                                 </div>
+                                div class="info-item">
+                                <div class="info-label">Comissão</div>
+                                <div class="info-value">${i.comissao || 0}%</div>
+        </div>
                                 ` : ''}
                             </div>
                         </div>
@@ -6277,6 +6290,7 @@ renderDashboard: () => {
                         
                         const videosData = document.getElementById('i-videos-data').value;
                         const videos = videosData ? JSON.parse(videosData) : [];
+                        const comissao = parseFloat(document.getElementById('i-comissao').value) || 0;
                         
                         const newImovel = {
                             id,
@@ -6356,6 +6370,7 @@ renderDashboard: () => {
                         document.getElementById('i-construtora').value = imovel.construtora || '';
                         document.getElementById('i-forma-pagamento').value = imovel.formaPagamento || '';
                         document.getElementById('i-data-entrega').value = imovel.dataEntrega || '';
+                        document.getElementById('i-comissao').value = imovel.comissao || '';
                         
                         document.getElementById('title-imovel').innerText = 'Editar Imóvel';
                         
