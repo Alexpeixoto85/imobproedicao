@@ -1811,6 +1811,10 @@
                     <select id="c-etapa-funil" class="form-control" required>
                     </select>
                 </div>
+                <div class="form-group" id="c-valor-venda-group" style="display: none;">
+                <label class="form-label">Valor da Venda (R$)</label>
+                <input type="text" id="c-valor-venda" class="form-control" placeholder="0,00" oninput="Utils.maskMoney(this)">
+                </div>
                 <div class="form-group">
                     <label class="form-label">Telefone (WhatsApp)</label>
                     <input type="tel" id="c-telefone" class="form-control" placeholder="(00) 00000-0000" required oninput="Utils.maskPhone(this)">
@@ -3592,6 +3596,30 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 } else if (target === 'clientes-view') {
                     fab.style.display = 'flex';
                     fab.onclick = () => UI.openNewCliente(false);
+                    // Adicione este código DENTRO da função openNewCliente, após carregar as etapas:
+const etapaSelect = document.getElementById('c-etapa-funil');
+if (etapaSelect) {
+    etapaSelect.innerHTML = '';
+    UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem).forEach(etapa => {
+        etapaSelect.innerHTML += `<option value="${etapa.id}">${etapa.nome}</option>`;
+    });
+    etapaSelect.value = cliente.etapaFunil || 'lead';
+    
+    // Adicionar evento para mostrar/ocultar campo de valor
+    etapaSelect.onchange = function() {
+        const valorVendaGroup = document.getElementById('c-valor-venda-group');
+        if (this.value === 'venda') {
+            valorVendaGroup.style.display = 'block';
+        } else {
+            valorVendaGroup.style.display = 'none';
+        }
+    };
+    
+    // Executar uma vez para estado inicial
+    setTimeout(() => {
+        etapaSelect.onchange();
+    }, 100);
+}
                 } else if (target === 'agenda-view') {
                     fab.style.display = 'flex';
                     fab.onclick = UI.openNewVisita;
@@ -6011,25 +6039,32 @@ renderDashboard: () => {
         const App = {
             cliente: {
                 save: async (e) => {
-                    e.preventDefault();
-                    const id = document.getElementById('c-id').value || Utils.id();
-                    const nome = document.getElementById('c-nome').value;
-                    const tipo = document.getElementById('c-tipo').value;
-                    const etapaFunil = document.getElementById('c-etapa-funil').value || 'lead';
-                    const telefone = document.getElementById('c-telefone').value;
-                    const email = document.getElementById('c-email').value;
-                    const imovelInteresseId = document.getElementById('c-imovel-interesse').value || null;
-                    const dataNascimento = document.getElementById('c-data-nascimento').value || null;
-                    const faixaPreco = document.getElementById('c-faixa-preco').value;
-                    const observacoes = document.getElementById('c-observacoes').value;
+    e.preventDefault();
+    const id = document.getElementById('c-id').value || Utils.id();
+    const nome = document.getElementById('c-nome').value;
+    const tipo = document.getElementById('c-tipo').value;
+    const etapaFunil = document.getElementById('c-etapa-funil').value || 'lead';
+    const telefone = document.getElementById('c-telefone').value;
+    const email = document.getElementById('c-email').value;
+    const imovelInteresseId = document.getElementById('c-imovel-interesse').value || null;
+    const dataNascimento = document.getElementById('c-data-nascimento').value || null;
+    const faixaPreco = document.getElementById('c-faixa-preco').value;
+    const observacoes = document.getElementById('c-observacoes').value;
+    
+    // NOVO CAMPO: Valor da venda
+    const valorVenda = document.getElementById('c-valor-venda').value ? 
+                       Utils.parseCurrency(document.getElementById('c-valor-venda').value) : 0;
 
-                    const newClient = { 
-                        id, nome, tipo, etapaFunil, telefone, email, 
-                        imovelInteresseId, dataNascimento,
-                        faixaPreco, observacoes,
-                        dataCriacao: new Date().toISOString(),
-                        dataEntradaFunil: new Date().toISOString().split('T')[0]
-                    };
+    const newClient = { 
+        id, nome, tipo, etapaFunil, telefone, email, 
+        imovelInteresseId, dataNascimento,
+        faixaPreco, observacoes,
+        // ADICIONAR O VALOR DA VENDA
+        valorVenda: etapaFunil === 'venda' ? valorVenda : 0,
+        dataCriacao: new Date().toISOString(),
+        dataEntradaFunil: new Date().toISOString().split('T')[0]
+    };
+    
                     
                     const existingIdx = UI.data.clientes.findIndex(c => c.id === id);
                     if(existingIdx >= 0) {
@@ -6054,19 +6089,24 @@ renderDashboard: () => {
                 },
                 
                 edit: async (id) => {
-                    const cliente = UI.data.clientes.find(x => x.id === id);
-                    if(!cliente) return;
-                    
-                    document.getElementById('c-id').value = cliente.id;
-                    document.getElementById('c-nome').value = cliente.nome || '';
-                    document.getElementById('c-tipo').value = cliente.tipo || 'comprador';
-                    document.getElementById('c-telefone').value = cliente.telefone || '';
-                    document.getElementById('c-email').value = cliente.email || '';
-                    document.getElementById('c-imovel-interesse').value = cliente.imovelInteresseId || '';
-                    document.getElementById('c-data-nascimento').value = cliente.dataNascimento || '';
-                    document.getElementById('c-faixa-preco').value = cliente.faixaPreco || '';
-                    document.getElementById('c-observacoes').value = cliente.observacoes || '';
-                    document.getElementById('title-cliente').innerText = 'Editar Cliente';
+    const cliente = UI.data.clientes.find(x => x.id === id);
+    if(!cliente) return;
+    
+    document.getElementById('c-id').value = cliente.id;
+    document.getElementById('c-nome').value = cliente.nome || '';
+    document.getElementById('c-tipo').value = cliente.tipo || 'comprador';
+    document.getElementById('c-telefone').value = cliente.telefone || '';
+    document.getElementById('c-email').value = cliente.email || '';
+    document.getElementById('c-imovel-interesse').value = cliente.imovelInteresseId || '';
+    document.getElementById('c-data-nascimento').value = cliente.dataNascimento || '';
+    document.getElementById('c-faixa-preco').value = cliente.faixaPreco || '';
+    document.getElementById('c-observacoes').value = cliente.observacoes || '';
+    
+    // NOVO: Preencher valor da venda
+    document.getElementById('c-valor-venda').value = cliente.valorVenda ? 
+                                                    Utils.formatCurrency(cliente.valorVenda) : '';
+    
+    document.getElementById('title-cliente').innerText = 'Editar Cliente';
                     
                     const imovelSelect = document.getElementById('c-imovel-interesse');
                     if (imovelSelect) {
@@ -6078,16 +6118,35 @@ renderDashboard: () => {
                     }
                     
                     const etapaSelect = document.getElementById('c-etapa-funil');
-                    if (etapaSelect) {
-                        etapaSelect.innerHTML = '';
-                        UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem).forEach(etapa => {
-                            etapaSelect.innerHTML += `<option value="${etapa.id}">${etapa.nome}</option>`;
-                        });
-                        etapaSelect.value = cliente.etapaFunil || 'lead';
-                    }
-                    
-                    UI.openModal('cliente');
-                },
+    if (etapaSelect) {
+        etapaSelect.innerHTML = '';
+        UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem).forEach(etapa => {
+            etapaSelect.innerHTML += `<option value="${etapa.id}">${etapa.nome}</option>`;
+        });
+        etapaSelect.value = cliente.etapaFunil || 'lead';
+        
+        // Mostrar/ocultar campo de valor
+        etapaSelect.onchange = function() {
+            const valorVendaGroup = document.getElementById('c-valor-venda-group');
+            if (this.value === 'venda') {
+                valorVendaGroup.style.display = 'block';
+            } else {
+                valorVendaGroup.style.display = 'none';
+            }
+        };
+        
+        // Executar para estado atual
+        setTimeout(() => {
+            etapaSelect.onchange();
+            // Se for etapa venda, mostrar o campo
+            if (cliente.etapaFunil === 'venda') {
+                document.getElementById('c-valor-venda-group').style.display = 'block';
+            }
+        }, 100);
+    }
+    
+    UI.openModal('cliente');
+},
                 
                 delete: async (id) => {
                     if(!confirm('Tem certeza que deseja excluir este cliente?')) return;
