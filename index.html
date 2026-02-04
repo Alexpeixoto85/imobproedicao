@@ -2275,14 +2275,8 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
     </button>
     <button type="button" class="btn-block" style="background: var(--accent); margin: 0;" onclick="App.backup.exportIOS()">
         <i class="fab fa-apple"></i> iOS
-         <button type="button" class="btn-block" style="background: var(--warning); margin: 0;" onclick="App.backup.exportImoveis()">
-        <i class="fas fa-home"></i> Exportar Imóveis
-    </button>
-    <button type="button" class="btn-block" style="background: var(--info); margin: 0;" onclick="App.backup.importImoveisTrigger()">
-        <i class="fas fa-file-import"></i> Importar Imóveis
     </button>
 </div>
-                <input type="file" id="import-imoveis-file" style="display: none;" accept=".json" onchange="App.backup.importImoveisData(this)">
 
                 <button type="button" class="btn-block" style="background: var(--danger); margin-top: 10px;" onclick="App.backup.clearData()">
                     <i class="fas fa-trash"></i> Resetar Tudo
@@ -6899,200 +6893,691 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 }
             },
             
-            backup: {
-    exportData: () => {
+backup: {
+    // ==================== BACKUP COMPLETO ====================
+    
+    // Exportar todos os dados
+    exportData: function() {
         try {
-            const data = {
-                clientes: UI.data.clientes,
-                imoveis: UI.data.imoveis,
-                visitas: UI.data.visitas,
-                links: UI.data.links,
-                settings: Storage.getSettings().then(s => s),
-                funilEtapas: UI.data.funilEtapas,
-                exportDate: new Date().toISOString(),
-                version: '1.0',
-                app: 'ImobiPro',
-                type: 'complete'
-            };
+            // Verificar se há dados
+            const totalClientes = UI.data.clientes.length;
+            const totalImoveis = UI.data.imoveis.length;
+            const totalVisitas = UI.data.visitas.length;
+            const totalLinks = UI.data.links.length;
             
-            Storage.getSettings().then(settings => {
-                data.settings = settings;
+            if (totalClientes + totalImoveis + totalVisitas + totalLinks === 0) {
+                Utils.toast('❌ Não há dados para exportar!', 'error');
+                return;
+            }
+            
+            if (!confirm(`📊 EXPORTAR TODOS OS DADOS\n\n` +
+                        `• Clientes: ${totalClientes}\n` +
+                        `• Imóveis: ${totalImoveis}\n` +
+                        `• Agendamentos: ${totalVisitas}\n` +
+                        `• Links: ${totalLinks}\n\n` +
+                        `Isso criará um arquivo JSON com todos os dados.\n\n` +
+                        `Continuar?`)) {
+                return;
+            }
+            
+            // Coletar todos os dados
+            Storage.getSettings().then(async (settings) => {
+                const backupData = {
+                    // Metadados
+                    app: 'ImobiPro',
+                    version: '2.0',
+                    exportDate: new Date().toISOString(),
+                    exportType: 'full-backup',
+                    
+                    // Dados
+                    clientes: UI.data.clientes,
+                    imoveis: UI.data.imoveis,
+                    visitas: UI.data.visitas,
+                    links: UI.data.links,
+                    funilEtapas: UI.data.funilEtapas,
+                    settings: settings,
+                    
+                    // Estatísticas
+                    stats: {
+                        totalClientes: totalClientes,
+                        totalImoveis: totalImoveis,
+                        totalVisitas: totalVisitas,
+                        totalLinks: totalLinks,
+                        dataInicial: UI.data.clientes.length > 0 ? 
+                            UI.data.clientes.reduce((min, c) => 
+                                c.dataCriacao < min ? c.dataCriacao : min, 
+                                UI.data.clientes[0].dataCriacao
+                            ) : null
+                    }
+                };
                 
-                const dataStr = JSON.stringify(data, null, 2);
-                const dataBlob = new Blob([dataStr], { type: 'application/json' });
-                const url = URL.createObjectURL(dataBlob);
+                // Converter para JSON
+                const jsonData = JSON.stringify(backupData, null, 2);
                 
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `imobipro_backup_${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                // Criar blob
+                const blob = new Blob([jsonData], { 
+                    type: 'application/json;charset=utf-8' 
+                });
                 
-                Utils.toast('Backup exportado com sucesso!');
+                // Criar URL
+                const url = URL.createObjectURL(blob);
+                
+                // Criar link de download
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `ImobiPro_Backup_Completo_${new Date().toISOString().split('T')[0]}.json`;
+                
+                // Adicionar ao documento e clicar
+                document.body.appendChild(link);
+                link.click();
+                
+                // Limpar
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
+                
+                Utils.toast(`✅ Backup completo exportado! (${totalImoveis} imóveis, ${totalClientes} clientes)`);
+                
+                // Log para debug
+                console.log('Backup completo exportado:', {
+                    tamanho: (jsonData.length / 1024).toFixed(2) + ' KB',
+                    dados: backupData.stats
+                });
             });
             
         } catch (error) {
-            console.error('Erro ao exportar backup:', error);
-            Utils.toast('Erro ao exportar backup', 'error');
+            console.error('Erro no backup completo:', error);
+            Utils.toast(`❌ Erro: ${error.message}`, 'error');
         }
     },
     
-    importTrigger: () => {
-        document.getElementById('import-file').click();
-    },
-    
-    importData: async (input) => {
+    // Importar todos os dados
+    importData: async function(input) {
         const file = input.files[0];
         if (!file) return;
         
-        if (!confirm('⚠️ ATENÇÃO: Importar backup irá SOBRESCREVER todos os dados atuais. Deseja continuar?')) {
-            input.value = '';
-            return;
-        }
-        
         try {
+            // Ler arquivo
             const text = await file.text();
             const data = JSON.parse(text);
             
+            // Validar arquivo
             if (!data.app || data.app !== 'ImobiPro') {
-                throw new Error('Arquivo de backup inválido');
+                throw new Error('Arquivo de backup inválido!');
             }
             
-            // Verificar se é backup completo ou apenas de imóveis
-            if (data.type === 'imoveis') {
-                // É um backup apenas de imóveis
-                if (data.imoveis && Array.isArray(data.imoveis)) {
-                    await DB.clear('imoveis');
-                    for (const imovel of data.imoveis) {
-                        await DB.add('imoveis', imovel);
-                    }
-                    UI.data.imoveis = await Storage.getImoveis();
-                    UI.renderImoveis();
-                    UI.renderDashboard();
-                    UI.renderFunil();
-                    Utils.toast('Backup de imóveis importado com sucesso!');
-                }
-            } else {
-                // Backup completo (código original)
-                if (data.clientes && Array.isArray(data.clientes)) {
-                    await DB.clear('clientes');
-                    for (const cliente of data.clientes) {
-                        await DB.add('clientes', cliente);
-                    }
-                }
-                
-                if (data.imoveis && Array.isArray(data.imoveis)) {
-                    await DB.clear('imoveis');
-                    for (const imovel of data.imoveis) {
-                        await DB.add('imoveis', imovel);
-                    }
-                }
-                
-                if (data.visitas && Array.isArray(data.visitas)) {
-                    await DB.clear('visitas');
-                    for (const visita of data.visitas) {
-                        await DB.add('visitas', visita);
-                    }
-                }
-                
-                if (data.links && Array.isArray(data.links)) {
-                    await DB.clear('links');
-                    for (const link of data.links) {
-                        await DB.add('links', link);
-                    }
-                }
-                
-                if (data.settings) {
-                    await DB.put('settings', data.settings);
-                }
-                
-                if (data.funilEtapas && Array.isArray(data.funilEtapas)) {
-                    await DB.clear('funilEtapas');
-                    for (const etapa of data.funilEtapas) {
-                        await DB.add('funilEtapas', etapa);
-                    }
-                }
-                
-                UI.data.clientes = await Storage.getClientes();
-                UI.data.imoveis = await Storage.getImoveis();
-                UI.data.visitas = await Storage.getVisitas();
-                UI.data.links = await Storage.getLinks();
-                UI.data.funilEtapas = await Storage.getFunilEtapas();
-                
-                UI.renderClientes();
-                UI.renderImoveis();
-                UI.renderAgenda();
-                UI.renderLinks();
-                UI.renderDashboard();
-                UI.renderFunil();
-                
-                Utils.toast('Backup completo importado com sucesso!');
+            // Mostrar informações do backup
+            const stats = data.stats || {};
+            const info = `📂 ARQUIVO DE BACKUP\n\n` +
+                        `Tipo: ${data.exportType || 'Desconhecido'}\n` +
+                        `Data: ${data.exportDate ? new Date(data.exportDate).toLocaleString() : 'Desconhecida'}\n` +
+                        `Clientes: ${stats.totalClientes || data.clientes?.length || 0}\n` +
+                        `Imóveis: ${stats.totalImoveis || data.imoveis?.length || 0}\n` +
+                        `Agendamentos: ${stats.totalVisitas || data.visitas?.length || 0}\n\n` +
+                        `⚠️ ATENÇÃO: Isso substituirá TODOS os dados atuais!\n\n` +
+                        `Continuar?`;
+            
+            if (!confirm(info)) {
+                input.value = '';
+                return;
             }
             
-        } catch (error) {
-            console.error('Erro ao importar backup:', error);
-            Utils.toast('Erro ao importar backup. Arquivo inválido.', 'error');
-        }
-        
-        input.value = '';
-    },
-    
-    exportIOS: () => {
-        try {
-            const data = {
-                clientes: UI.data.clientes,
-                imoveis: UI.data.imoveis,
-                visitas: UI.data.visitas,
-                links: UI.data.links,
-                settings: Storage.getSettings().then(s => s),
-                funilEtapas: UI.data.funilEtapas,
-                exportDate: new Date().toISOString(),
-                version: '1.0',
-                app: 'ImobiPro',
-                type: 'complete'
+            // Mostrar loading
+            Utils.toast('⏳ Importando dados...', 'info');
+            
+            // Processar importação em etapas
+            const results = {
+                clientes: 0,
+                imoveis: 0,
+                visitas: 0,
+                links: 0,
+                etapas: 0
             };
             
-            Storage.getSettings().then(settings => {
-                data.settings = settings;
-                
-                const dataStr = JSON.stringify(data, null, 2);
-                
-                const blob = new Blob([dataStr], { type: 'application/json' });
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    const text = e.target.result;
-                    const compressed = LZString.compressToEncodedURIComponent(text);
-                    
-                    const downloadLink = document.createElement('a');
-                    downloadLink.href = 'data:application/octet-stream,' + compressed;
-                    downloadLink.download = `imobipro_ios_backup_${new Date().toISOString().split('T')[0]}.txt`;
-                    downloadLink.click();
-                };
-                
-                reader.readAsText(blob);
-                
-                Utils.toast('Backup para iOS gerado com sucesso!');
-            });
-            
-        } catch (error) {
-            console.error('Erro ao exportar backup iOS:', error);
-            Utils.toast('Erro ao exportar backup iOS', 'error');
-        }
-    },
-    
-    clearData: async () => {
-        if(!confirm('🚨🚨🚨 ATENÇÃO 🚨🚨🚨\n\nIsso apagará TODOS os dados do aplicativo:\n- Todos os clientes\n- Todos os imóveis\n- Todos os agendamentos\n- Todos os links\n- Todas as configurações\n\nEsta ação NÃO pode ser desfeita!\n\nTem certeza absoluta?')) return;
-        
-        try {
+            // 1. Limpar dados antigos
             await DB.clear('clientes');
             await DB.clear('imoveis');
             await DB.clear('visitas');
             await DB.clear('links');
             await DB.clear('funilEtapas');
             
+            // 2. Importar clientes
+            if (data.clientes && Array.isArray(data.clientes)) {
+                for (const cliente of data.clientes) {
+                    await DB.add('clientes', cliente);
+                    results.clientes++;
+                }
+            }
+            
+            // 3. Importar imóveis
+            if (data.imoveis && Array.isArray(data.imoveis)) {
+                for (const imovel of data.imoveis) {
+                    await DB.add('imoveis', imovel);
+                    results.imoveis++;
+                }
+            }
+            
+            // 4. Importar visitas
+            if (data.visitas && Array.isArray(data.visitas)) {
+                for (const visita of data.visitas) {
+                    await DB.add('visitas', visita);
+                    results.visitas++;
+                }
+            }
+            
+            // 5. Importar links
+            if (data.links && Array.isArray(data.links)) {
+                for (const link of data.links) {
+                    await DB.add('links', link);
+                    results.links++;
+                }
+            }
+            
+            // 6. Importar etapas do funil
+            if (data.funilEtapas && Array.isArray(data.funilEtapas)) {
+                for (const etapa of data.funilEtapas) {
+                    await DB.add('funilEtapas', etapa);
+                    results.etapas++;
+                }
+            } else {
+                // Criar etapas padrão se não existirem
+                const etapasPadrao = [
+                    { id: 'lead', nome: 'Lead', cor: '#93c5fd', ordem: 1 },
+                    { id: 'contato', nome: 'Contato Realizado', cor: '#60a5fa', ordem: 2 },
+                    { id: 'cpf', nome: 'CPF em Análise', cor: '#3b82f6', ordem: 3 },
+                    { id: 'sem-restricao', nome: 'Sem Restrição', cor: '#1d4ed8', ordem: 4 },
+                    { id: 'documentacao', nome: 'Documentação', cor: '#7c3aed', ordem: 5 },
+                    { id: 'aprovado', nome: 'Aprovado', cor: '#10b981', ordem: 6 },
+                    { id: 'contrato', nome: 'Contrato Assinado', cor: '#059669', ordem: 7 },
+                    { id: 'venda', nome: 'Venda Concluída', cor: '#047857', ordem: 8 }
+                ];
+                for (const etapa of etapasPadrao) {
+                    await DB.add('funilEtapas', etapa);
+                    results.etapas++;
+                }
+            }
+            
+            // 7. Importar configurações
+            if (data.settings) {
+                await DB.put('settings', data.settings);
+            }
+            
+            // Atualizar dados na interface
+            UI.data.clientes = await Storage.getClientes();
+            UI.data.imoveis = await Storage.getImoveis();
+            UI.data.visitas = await Storage.getVisitas();
+            UI.data.links = await Storage.getLinks();
+            UI.data.funilEtapas = await Storage.getFunilEtapas();
+            
+            // Atualizar todas as views
+            UI.renderClientes();
+            UI.renderImoveis();
+            UI.renderAgenda();
+            UI.renderLinks();
+            UI.renderDashboard();
+            UI.renderFunil();
+            
+            // Mensagem de sucesso
+            const successMsg = `✅ IMPORTAÇÃO CONCLUÍDA!\n\n` +
+                              `✓ ${results.clientes} clientes\n` +
+                              `✓ ${results.imoveis} imóveis\n` +
+                              `✓ ${results.visitas} agendamentos\n` +
+                              `✓ ${results.links} links\n` +
+                              `✓ ${results.etapas} etapas do funil`;
+            
+            alert(successMsg);
+            Utils.toast('✅ Sistema restaurado com sucesso!');
+            
+            // Log
+            console.log('Importação completa:', results);
+            
+        } catch (error) {
+            console.error('Erro na importação:', error);
+            Utils.toast(`❌ Erro na importação: ${error.message}`, 'error');
+            alert(`ERRO NA IMPORTAÇÃO:\n\n${error.message}\n\nVerifique se o arquivo é válido.`);
+        }
+        
+        input.value = '';
+    },
+    
+    // Acionar importação completa
+    importTrigger: function() {
+        console.log('Acionando importação completa...');
+        document.getElementById('import-file').click();
+    },
+    
+    // ==================== BACKUP DE IMÓVEIS ====================
+    
+    // Exportar apenas imóveis
+    exportImoveisData: function() {
+        try {
+            // Verificar se há imóveis
+            if (!UI.data.imoveis || UI.data.imoveis.length === 0) {
+                Utils.toast('❌ Não há imóveis para exportar!', 'error');
+                return;
+            }
+            
+            const totalImoveis = UI.data.imoveis.length;
+            const totalFotos = UI.data.imoveis.reduce((acc, imovel) => 
+                acc + (imovel.imagens ? imovel.imagens.length : 0), 0);
+            const totalVideos = UI.data.imoveis.reduce((acc, imovel) => 
+                acc + (imovel.videos ? imovel.videos.length : 0), 0);
+            
+            if (!confirm(`🏠 EXPORTAR IMÓVEIS\n\n` +
+                        `• Total: ${totalImoveis} imóveis\n` +
+                        `• Fotos: ${totalFotos} imagens\n` +
+                        `• Vídeos: ${totalVideos} links\n\n` +
+                        `Isso criará um arquivo apenas com os imóveis.\n\n` +
+                        `Continuar?`)) {
+                return;
+            }
+            
+            // Preparar dados
+            const backupData = {
+                // Metadados
+                app: 'ImobiPro',
+                version: '2.0',
+                exportDate: new Date().toISOString(),
+                exportType: 'imoveis-only',
+                
+                // Dados dos imóveis
+                imoveis: UI.data.imoveis.map(imovel => ({
+                    ...imovel,
+                    // Garantir que arrays existem
+                    imagens: imovel.imagens || [],
+                    videos: imovel.videos || [],
+                    // Informações adicionais
+                    _exportInfo: {
+                        possuiFotos: (imovel.imagens && imovel.imagens.length > 0),
+                        possuiVideos: (imovel.videos && imovel.videos.length > 0),
+                        tipo: imovel.tipo,
+                        status: imovel.status
+                    }
+                })),
+                
+                // Estatísticas
+                stats: {
+                    totalImoveis: totalImoveis,
+                    totalFotos: totalFotos,
+                    totalVideos: totalVideos,
+                    porTipo: UI.data.imoveis.reduce((acc, imovel) => {
+                        acc[imovel.tipo] = (acc[imovel.tipo] || 0) + 1;
+                        return acc;
+                    }, {}),
+                    porStatus: UI.data.imoveis.reduce((acc, imovel) => {
+                        acc[imovel.status] = (acc[imovel.status] || 0) + 1;
+                        return acc;
+                    }, {})
+                }
+            };
+            
+            // Converter para JSON
+            const jsonData = JSON.stringify(backupData, null, 2);
+            
+            // Criar blob
+            const blob = new Blob([jsonData], { 
+                type: 'application/json;charset=utf-8' 
+            });
+            
+            // Criar URL
+            const url = URL.createObjectURL(blob);
+            
+            // Criar link de download
+            const link = document.createElement('a');
+            link.href = url;
+            
+            // Nome do arquivo
+            const date = new Date();
+            const dateStr = date.toISOString().split('T')[0];
+            const timeStr = date.getHours().toString().padStart(2, '0') + 
+                          date.getMinutes().toString().padStart(2, '0');
+            link.download = `ImobiPro_Imoveis_${dateStr}_${timeStr}_${totalImoveis}imoveis.json`;
+            
+            // Adicionar e clicar
+            document.body.appendChild(link);
+            link.click();
+            
+            // Limpar
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
+            
+            Utils.toast(`✅ ${totalImoveis} imóveis exportados com sucesso!`);
+            
+            // Log
+            console.log('Exportação de imóveis:', {
+                total: totalImoveis,
+                fotos: totalFotos,
+                videos: totalVideos,
+                tamanho: (jsonData.length / 1024).toFixed(2) + ' KB'
+            });
+            
+        } catch (error) {
+            console.error('Erro na exportação de imóveis:', error);
+            Utils.toast(`❌ Erro: ${error.message}`, 'error');
+        }
+    },
+    
+    // Importar apenas imóveis
+    importImoveisData: async function(input) {
+        const file = input.files[0];
+        if (!file) return;
+        
+        try {
+            // Ler arquivo
+            const text = await file.text();
+            const data = JSON.parse(text);
+            
+            // Validar
+            if (!data.app || data.app !== 'ImobiPro') {
+                throw new Error('Arquivo de backup inválido!');
+            }
+            
+            if (!data.imoveis || !Array.isArray(data.imoveis)) {
+                throw new Error('Arquivo não contém dados de imóveis!');
+            }
+            
+            const totalNoArquivo = data.imoveis.length;
+            const totalAtual = UI.data.imoveis.length;
+            const stats = data.stats || {};
+            
+            // Mostrar informações
+            const info = `🏠 IMPORTAR IMÓVEIS\n\n` +
+                        `No arquivo: ${totalNoArquivo} imóveis\n` +
+                        `Atualmente: ${totalAtual} imóveis\n\n` +
+                        `Fotos: ${stats.totalFotos || 'N/A'}\n` +
+                        `Vídeos: ${stats.totalVideos || 'N/A'}\n\n` +
+                        `Escolha como importar:`;
+            
+            const option = prompt(
+                info + 
+                '\n\n1. ADICIONAR aos imóveis existentes\n' +
+                '2. SUBSTITUIR todos os imóveis\n' +
+                '3. VERIFICAR duplicados antes de adicionar\n\n' +
+                'Digite 1, 2 ou 3:'
+            );
+            
+            if (!option) {
+                input.value = '';
+                return;
+            }
+            
+            let resultados = {
+                adicionados: 0,
+                atualizados: 0,
+                duplicados: 0,
+                erros: 0
+            };
+            
+            // Opção 1: Adicionar todos
+            if (option === '1') {
+                if (!confirm(`Adicionar ${totalNoArquivo} imóveis aos ${totalAtual} existentes?\n\nTotal final: ${totalNoArquivo + totalAtual} imóveis`)) {
+                    input.value = '';
+                    return;
+                }
+                
+                for (const imovel of data.imoveis) {
+                    try {
+                        // Gerar novo ID
+                        const novoImovel = {
+                            ...imovel,
+                            id: Utils.id(),
+                            dataCriacao: new Date().toISOString(),
+                            dataAtualizacao: new Date().toISOString()
+                        };
+                        
+                        await DB.add('imoveis', novoImovel);
+                        resultados.adicionados++;
+                    } catch (error) {
+                        resultados.erros++;
+                        console.error('Erro ao adicionar imóvel:', error);
+                    }
+                }
+            }
+            
+            // Opção 2: Substituir tudo
+            else if (option === '2') {
+                if (!confirm(`🚨 SUBSTITUIR TODOS OS IMÓVEIS\n\n` +
+                           `Isso removerá ${totalAtual} imóveis atuais\n` +
+                           `e importará ${totalNoArquivo} do arquivo.\n\n` +
+                           `Continuar?`)) {
+                    input.value = '';
+                    return;
+                }
+                
+                // Limpar imóveis atuais
+                await DB.clear('imoveis');
+                
+                // Importar novos
+                for (const imovel of data.imoveis) {
+                    try {
+                        const novoImovel = {
+                            ...imovel,
+                            id: Utils.id(),
+                            dataCriacao: new Date().toISOString(),
+                            dataAtualizacao: new Date().toISOString()
+                        };
+                        
+                        await DB.add('imoveis', novoImovel);
+                        resultados.adicionados++;
+                    } catch (error) {
+                        resultados.erros++;
+                        console.error('Erro ao adicionar imóvel:', error);
+                    }
+                }
+            }
+            
+            // Opção 3: Verificar duplicados
+            else if (option === '3') {
+                if (!confirm(`Verificar duplicados antes de adicionar?\n\n` +
+                           `O sistema verificará por imóveis com mesmo título e endereço.`)) {
+                    input.value = '';
+                    return;
+                }
+                
+                for (const imovel of data.imoveis) {
+                    try {
+                        // Verificar se já existe
+                        const existe = UI.data.imoveis.find(
+                            i => i.titulo === imovel.titulo && 
+                                 i.endereco === imovel.endereco
+                        );
+                        
+                        if (existe) {
+                            // Atualizar imóvel existente
+                            const imovelAtualizado = {
+                                ...existe,
+                                ...imovel,
+                                id: existe.id, // Manter ID original
+                                dataAtualizacao: new Date().toISOString()
+                            };
+                            
+                            await DB.put('imoveis', imovelAtualizado);
+                            resultados.atualizados++;
+                            resultados.duplicados++;
+                        } else {
+                            // Adicionar novo
+                            const novoImovel = {
+                                ...imovel,
+                                id: Utils.id(),
+                                dataCriacao: new Date().toISOString(),
+                                dataAtualizacao: new Date().toISOString()
+                            };
+                            
+                            await DB.add('imoveis', novoImovel);
+                            resultados.adicionados++;
+                        }
+                    } catch (error) {
+                        resultados.erros++;
+                        console.error('Erro ao processar imóvel:', error);
+                    }
+                }
+            }
+            
+            // Atualizar dados
+            UI.data.imoveis = await Storage.getImoveis();
+            UI.renderImoveis();
+            UI.renderDashboard();
+            
+            // Mostrar resultados
+            const resultadoMsg = `📊 RESULTADO DA IMPORTAÇÃO\n\n` +
+                                `✓ Adicionados: ${resultados.adicionados}\n` +
+                                `✓ Atualizados: ${resultados.atualizados}\n` +
+                                `✓ Duplicados: ${resultados.duplicados}\n` +
+                                `✗ Erros: ${resultados.erros}\n\n` +
+                                `Total atual: ${UI.data.imoveis.length} imóveis`;
+            
+            alert(resultadoMsg);
+            Utils.toast(`✅ ${resultados.adicionados + resultados.atualizados} imóveis processados!`);
+            
+        } catch (error) {
+            console.error('Erro na importação de imóveis:', error);
+            Utils.toast(`❌ Erro: ${error.message}`, 'error');
+            alert(`ERRO NA IMPORTAÇÃO:\n\n${error.message}`);
+        }
+        
+        input.value = '';
+    },
+    
+    // Acionar importação de imóveis
+    importImoveisTrigger: function() {
+        console.log('Acionando importação de imóveis...');
+        document.getElementById('import-imoveis-file').click();
+    },
+    
+    // ==================== FUNÇÕES ADICIONAIS ====================
+    
+    // Exportar para iOS
+    exportIOS: function() {
+        try {
+            if (!confirm('Gerar backup compactado para iOS?\n\nO arquivo será comprimido para economizar espaço.')) {
+                return;
+            }
+            
+            // Preparar dados
+            const backupData = {
+                app: 'ImobiPro',
+                version: '2.0',
+                exportDate: new Date().toISOString(),
+                exportType: 'ios-compressed',
+                clientes: UI.data.clientes,
+                imoveis: UI.data.imoveis,
+                visitas: UI.data.visitas,
+                links: UI.data.links,
+                funilEtapas: UI.data.funilEtapas
+            };
+            
+            // Converter para JSON
+            const jsonData = JSON.stringify(backupData);
+            
+            // Comprimir (usando LZString)
+            if (typeof LZString !== 'undefined') {
+                const compressed = LZString.compressToEncodedURIComponent(jsonData);
+                
+                // Criar blob
+                const blob = new Blob([compressed], { 
+                    type: 'text/plain;charset=utf-8' 
+                });
+                
+                // Criar URL
+                const url = URL.createObjectURL(blob);
+                
+                // Criar link
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `ImobiPro_iOS_${new Date().toISOString().split('T')[0]}.txt`;
+                
+                // Download
+                document.body.appendChild(link);
+                link.click();
+                
+                // Limpar
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
+                
+                Utils.toast('✅ Backup para iOS gerado!');
+                
+                console.log('Backup iOS:', {
+                    original: (jsonData.length / 1024).toFixed(2) + ' KB',
+                    comprimido: (compressed.length / 1024).toFixed(2) + ' KB',
+                    taxaCompressao: ((compressed.length / jsonData.length) * 100).toFixed(1) + '%'
+                });
+            } else {
+                throw new Error('Biblioteca de compressão não carregada');
+            }
+            
+        } catch (error) {
+            console.error('Erro no backup iOS:', error);
+            Utils.toast(`❌ Erro: ${error.message}`, 'error');
+        }
+    },
+    
+    // Mostrar informações do sistema
+    showInfo: function() {
+        const info = `📊 INFORMAÇÕES DO SISTEMA\n\n` +
+                    `Versão: 2.0\n` +
+                    `Data: ${new Date().toLocaleString()}\n\n` +
+                    `📈 ESTATÍSTICAS:\n` +
+                    `• Clientes: ${UI.data.clientes.length}\n` +
+                    `• Imóveis: ${UI.data.imoveis.length}\n` +
+                    `• Agendamentos: ${UI.data.visitas.length}\n` +
+                    `• Links: ${UI.data.links.length}\n` +
+                    `• Etapas do Funil: ${UI.data.funilEtapas.length}\n\n` +
+                    `💾 BACKUP:\n` +
+                    `• Última exportação: N/A\n` +
+                    `• Tamanho estimado: ${this.estimateBackupSize()} KB\n\n` +
+                    `📱 DISPOSITIVO:\n` +
+                    `• Navegador: ${navigator.userAgent.split(')')[0].split('(')[1] || 'Desconhecido'}\n` +
+                    `• Online: ${navigator.onLine ? 'Sim' : 'Não'}\n` +
+                    `• Armazenamento: Disponível`;
+        
+        alert(info);
+    },
+    
+    // Estimar tamanho do backup
+    estimateBackupSize: function() {
+        const data = {
+            clientes: UI.data.clientes,
+            imoveis: UI.data.imoveis,
+            visitas: UI.data.visitas,
+            links: UI.data.links
+        };
+        
+        const jsonString = JSON.stringify(data);
+        const sizeKB = (jsonString.length / 1024).toFixed(2);
+        return sizeKB;
+    },
+    
+    // Limpar todos os dados
+    clearData: async function() {
+        if (!confirm(`🚨🚨🚨 LIMPAR TODOS OS DADOS 🚨🚨🚨\n\n` +
+                    `Isso apagará PERMANENTEMENTE:\n` +
+                    `• ${UI.data.clientes.length} clientes\n` +
+                    `• ${UI.data.imoveis.length} imóveis\n` +
+                    `• ${UI.data.visitas.length} agendamentos\n` +
+                    `• ${UI.data.links.length} links\n` +
+                    `• ${UI.data.funilEtapas.length} etapas do funil\n\n` +
+                    `ESTA AÇÃO NÃO PODE SER DESFEITA!\n\n` +
+                    `Tem certeza ABSOLUTA?`)) {
+            return;
+        }
+        
+        try {
+            // Mostrar loading
+            Utils.toast('⏳ Limpando dados...', 'info');
+            
+            // Limpar tudo
+            await DB.clear('clientes');
+            await DB.clear('imoveis');
+            await DB.clear('visitas');
+            await DB.clear('links');
+            await DB.clear('funilEtapas');
+            
+            // Restaurar configurações padrão
             const defaultSettings = {
                 id: 'main',
                 nome: 'Alex Peixoto',
@@ -7104,6 +7589,7 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
             };
             await DB.put('settings', defaultSettings);
             
+            // Restaurar etapas padrão do funil
             const etapasPadrao = [
                 { id: 'lead', nome: 'Lead', cor: '#93c5fd', ordem: 1 },
                 { id: 'contato', nome: 'Contato Realizado', cor: '#60a5fa', ordem: 2 },
@@ -7119,12 +7605,14 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 await DB.put('funilEtapas', etapa);
             }
             
+            // Atualizar dados
             UI.data.clientes = await Storage.getClientes();
             UI.data.imoveis = await Storage.getImoveis();
             UI.data.visitas = await Storage.getVisitas();
             UI.data.links = await Storage.getLinks();
             UI.data.funilEtapas = await Storage.getFunilEtapas();
             
+            // Atualizar interface
             UI.renderClientes();
             UI.renderImoveis();
             UI.renderAgenda();
@@ -7132,93 +7620,16 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
             UI.renderDashboard();
             UI.renderFunil();
             
-            Utils.toast('Todos os dados foram resetados!', 'success');
+            Utils.toast('✅ Todos os dados foram resetados!', 'success');
+            alert('✅ SISTEMA RESETADO COM SUCESSO!\n\nTodos os dados foram apagados e o sistema foi restaurado às configurações iniciais.');
             
         } catch (error) {
             console.error('Erro ao resetar dados:', error);
-            Utils.toast('Erro ao resetar dados', 'error');
+            Utils.toast(`❌ Erro: ${error.message}`, 'error');
         }
-    },
-
-    // NOVAS FUNÇÕES PARA IMÓVEIS
-    exportImoveis: () => {
-        try {
-            const data = {
-                imoveis: UI.data.imoveis,
-                exportDate: new Date().toISOString(),
-                version: '1.0',
-                app: 'ImobiPro',
-                type: 'imoveis' // Identificador de que é apenas imóveis
-            };
-
-            const dataStr = JSON.stringify(data, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `imobipro_imoveis_backup_${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            Utils.toast('Backup de imóveis exportado com sucesso!');
-
-        } catch (error) {
-            console.error('Erro ao exportar backup de imóveis:', error);
-            Utils.toast('Erro ao exportar backup de imóveis', 'error');
-        }
-    },
-
-    importImoveisTrigger: () => {
-        document.getElementById('import-imoveis-file').click();
-    },
-
-    importImoveisData: async (input) => {
-        const file = input.files[0];
-        if (!file) return;
-
-        if (!confirm('⚠️ ATENÇÃO: Importar backup de imóveis irá SOBRESCREVER todos os imóveis atuais. Deseja continuar?')) {
-            input.value = '';
-            return;
-        }
-
-        try {
-            const text = await file.text();
-            const data = JSON.parse(text);
-
-            // Verificar se é um arquivo de backup de imóveis válido
-            if (!data.type || data.type !== 'imoveis' || !Array.isArray(data.imoveis)) {
-                throw new Error('Arquivo de backup de imóveis inválido');
-            }
-
-            // Limpar os imóveis atuais no IndexedDB
-            await DB.clear('imoveis');
-
-            // Adicionar os novos imóveis
-            for (const imovel of data.imoveis) {
-                await DB.add('imoveis', imovel);
-            }
-
-            // Atualizar a lista de imóveis na interface
-            UI.data.imoveis = await Storage.getImoveis();
-
-            // Re-renderizar as views que dependem de imóveis
-            UI.renderImoveis();
-            UI.renderDashboard();
-            UI.renderFunil();
-
-            Utils.toast('Backup de imóveis importado com sucesso!');
-
-        } catch (error) {
-            console.error('Erro ao importar backup de imóveis:', error);
-            Utils.toast('Erro ao importar backup de imóveis. Arquivo inválido.', 'error');
-        }
-
-        input.value = '';
     }
-}
+}       
+        };
 
         // Inicialização da aplicação
         document.addEventListener('DOMContentLoaded', () => {
