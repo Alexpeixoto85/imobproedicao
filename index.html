@@ -1,6 +1,4 @@
-
-
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -1810,8 +1808,8 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Etapa no Funil</label>
-                    <select id="c-etapa-funil" class="form-control" required>
-                    </select>
+                    <select id="c-etapa-funil" class="form-control" required onchange="App.cliente.toggleValorVendaField()">
+                    </select>                
                 </div>
                 <div class="form-group">
                     <label class="form-label">Telefone (WhatsApp)</label>
@@ -6012,6 +6010,26 @@ renderDashboard: () => {
             }
 
         };
+        // Adicione esta função após a linha 2710 (aproximadamente)
+toggleValorVendaField: function() {
+    const etapaSelect = document.getElementById('c-etapa-funil');
+    const valorVendaGroup = document.getElementById('c-valor-venda-group');
+    const valorVendaInput = document.getElementById('c-valor-venda');
+    
+    if (!etapaSelect || !valorVendaGroup) return;
+    
+    const etapaId = etapaSelect.value;
+    
+    // Mostrar campo apenas se a etapa for "venda"
+    if (etapaId === 'venda') {
+        valorVendaGroup.style.display = 'block';
+        valorVendaInput.required = true;
+    } else {
+        valorVendaGroup.style.display = 'none';
+        valorVendaInput.required = false;
+        valorVendaInput.value = '';
+    }
+},
 
         // Aplicação principal
         const App = {
