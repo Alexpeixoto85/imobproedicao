@@ -1,3 +1,5 @@
+
+
     <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -1788,64 +1790,67 @@
             </div>
         </div>
 
-        <div class="modal-overlay" id="overlay-cliente"></div>
-        <div class="modal-sheet" id="sheet-cliente">
-            <div class="sheet-handle"></div>
-            <h3 class="section-title" id="title-cliente">Novo Cliente</h3>
-            <form id="form-cliente" onsubmit="App.cliente.save(event)">
-                <input type="hidden" id="c-id">
-                <div class="form-group">
-                    <label class="form-label">Nome Completo</label>
-                    <input type="text" id="c-nome" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Tipo de Cliente</label>
-                    <select id="c-tipo" class="form-control" required>
-                        <option value="comprador">Comprador</option>
-                        <option value="vendedor">Vendedor</option>
-                        <option value="ambos">Comprador/Vendedor</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Etapa no Funil</label>
-                    <select id="c-etapa-funil" class="form-control" required>
-                    </select>
-                </div>
-                <div class="form-group" id="c-valor-venda-group" style="display: none;">
-                <label class="form-label">Valor da Venda (R$)</label>
-                <input type="text" id="c-valor-venda" class="form-control" placeholder="0,00" oninput="Utils.maskMoney(this)">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Telefone (WhatsApp)</label>
-                    <input type="tel" id="c-telefone" class="form-control" placeholder="(00) 00000-0000" required oninput="Utils.maskPhone(this)">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" id="c-email" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Imóvel de Interesse</label>
-                    <select id="c-imovel-interesse" class="form-control">
-                        <option value="">Selecione um imóvel...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Data de Nascimento</label>
-                    <input type="date" id="c-data-nascimento" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Faixa de Preço (Interesse)</label>
-                    <input type="text" id="c-faixa-preco" class="form-control" placeholder="Ex: R$ 300.000 - 500.000">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Observações</label>
-                    <textarea id="c-observacoes" class="form-control" placeholder="Anotações sobre o cliente..."></textarea>
-                </div>
-                <button type="submit" class="btn-block">Salvar Cliente</button>
-                <button type="button" class="btn-block" style="background: var(--light); color: var(--secondary); margin-top: 8px;" onclick="UI.closeModals()">Cancelar</button>
-            </form>
+<!-- Substitua todo o bloco do formulário do cliente por este: -->
+<div class="modal-overlay" id="overlay-cliente"></div>
+<div class="modal-sheet" id="sheet-cliente">
+    <div class="sheet-handle"></div>
+    <h3 class="section-title" id="title-cliente">Novo Cliente</h3>
+    <form id="form-cliente" onsubmit="App.cliente.save(event)">
+        <input type="hidden" id="c-id">
+        <div class="form-group">
+            <label class="form-label">Nome Completo</label>
+            <input type="text" id="c-nome" class="form-control" required>
         </div>
-
+        <div class="form-group">
+            <label class="form-label">Tipo de Cliente</label>
+            <select id="c-tipo" class="form-control" required>
+                <option value="comprador">Comprador</option>
+                <option value="vendedor">Vendedor</option>
+                <option value="ambos">Comprador/Vendedor</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Etapa no Funil</label>
+            <select id="c-etapa-funil" class="form-control" required onchange="Utils.toggleValorVendaField()">
+            </select>
+        </div>
+        <div class="form-group" id="c-valor-venda-group" style="display: none;">
+            <label class="form-label">Valor da Venda (R$)</label>
+            <input type="text" id="c-valor-venda" class="form-control" placeholder="0,00" oninput="Utils.maskMoney(this)">
+            <small style="font-size: 0.75rem; color: var(--secondary);">
+                Preenchido automaticamente ao selecionar um imóvel, ou insira manualmente
+            </small>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Telefone (WhatsApp)</label>
+            <input type="tel" id="c-telefone" class="form-control" placeholder="(00) 00000-0000" required oninput="Utils.maskPhone(this)">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="c-email" class="form-control">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Imóvel de Interesse</label>
+            <select id="c-imovel-interesse" class="form-control" onchange="Utils.autoFillValorVenda()">
+                <option value="">Selecione um imóvel...</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Data de Nascimento</label>
+            <input type="date" id="c-data-nascimento" class="form-control">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Faixa de Preço (Interesse)</label>
+            <input type="text" id="c-faixa-preco" class="form-control" placeholder="Ex: R$ 300.000 - 500.000">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Observações</label>
+            <textarea id="c-observacoes" class="form-control" placeholder="Anotações sobre o cliente..."></textarea>
+        </div>
+        <button type="submit" class="btn-block">Salvar Cliente</button>
+        <button type="button" class="btn-block" style="background: var(--light); color: var(--secondary); margin-top: 8px;" onclick="UI.closeModals()">Cancelar</button>
+    </form>
+</div>
         <div class="modal-overlay" id="overlay-imovel"></div>
         <div class="modal-sheet" id="sheet-imovel">
             <!-- Após os campos de preço (aprox. linha 1480-1490) -->
@@ -3461,6 +3466,40 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                        url.includes('youtu.be') || 
                        url.includes('vimeo.com');
             }
+            // Adicione estas funções DENTRO do objeto Utils (procure o final do objeto, antes do fechamento }, )
+
+toggleValorVendaField: function() {
+    const etapaSelect = document.getElementById('c-etapa-funil');
+    const valorVendaGroup = document.getElementById('c-valor-venda-group');
+    
+    if (etapaSelect && valorVendaGroup) {
+        if (etapaSelect.value === 'venda') {
+            valorVendaGroup.style.display = 'block';
+        } else {
+            valorVendaGroup.style.display = 'none';
+        }
+    }
+},
+
+autoFillValorVenda: function() {
+    const imovelSelect = document.getElementById('c-imovel-interesse');
+    const valorVendaInput = document.getElementById('c-valor-venda');
+    const etapaSelect = document.getElementById('c-etapa-funil');
+    
+    if (imovelSelect && valorVendaInput && etapaSelect.value === 'venda') {
+        const imovelId = imovelSelect.value;
+        if (imovelId) {
+            const imovel = UI.data.imoveis.find(i => i.id === imovelId);
+            if (imovel && imovel.precoVenda) {
+                valorVendaInput.value = Utils.formatCurrency(imovel.precoVenda);
+            } else if (imovel && imovel.precoAluguel) {
+                valorVendaInput.value = Utils.formatCurrency(imovel.precoAluguel);
+            } else {
+                valorVendaInput.value = '';
+            }
+        }
+    }
+},
         };
 
         // Camada de armazenamento
@@ -3596,30 +3635,6 @@ Pedro Costa - (11) 77777-7777 - Solicitou proposta de financiamento</textarea>
                 } else if (target === 'clientes-view') {
                     fab.style.display = 'flex';
                     fab.onclick = () => UI.openNewCliente(false);
-                    // Adicione este código DENTRO da função openNewCliente, após carregar as etapas:
-const etapaSelect = document.getElementById('c-etapa-funil');
-if (etapaSelect) {
-    etapaSelect.innerHTML = '';
-    UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem).forEach(etapa => {
-        etapaSelect.innerHTML += `<option value="${etapa.id}">${etapa.nome}</option>`;
-    });
-    etapaSelect.value = cliente.etapaFunil || 'lead';
-    
-    // Adicionar evento para mostrar/ocultar campo de valor
-    etapaSelect.onchange = function() {
-        const valorVendaGroup = document.getElementById('c-valor-venda-group');
-        if (this.value === 'venda') {
-            valorVendaGroup.style.display = 'block';
-        } else {
-            valorVendaGroup.style.display = 'none';
-        }
-    };
-    
-    // Executar uma vez para estado inicial
-    setTimeout(() => {
-        etapaSelect.onchange();
-    }, 100);
-}
                 } else if (target === 'agenda-view') {
                     fab.style.display = 'flex';
                     fab.onclick = UI.openNewVisita;
@@ -3663,22 +3678,17 @@ renderDashboard: () => {
     const visitasHoje = visitas.filter(v => v.data === hoje && v.status !== 'cancelado');
     document.getElementById('dash-visitas').innerText = visitasHoje.length;
     
-    // NOVO CÁLCULO DE VENDAS BASEADO NO FUNIL
+    // NOVO CÁLCULO DE VENDAS BASEADO NO VALOR REAL DA VENDA
     let totalVendas = 0;
     
-    // Filtrar clientes na etapa "Venda Concluída"
+    // Filtrar clientes na etapa "Venda Concluída" com valor de venda
     const clientesVendaConcluida = clientes.filter(cliente => {
-        return cliente.etapaFunil === 'venda'; // Etapa "Venda Concluída"
+        return cliente.etapaFunil === 'venda' && cliente.valorVenda > 0;
     });
     
-    // Para cada cliente que vendeu, somar o valor do imóvel de interesse
+    // Somar o valor real da venda de cada cliente
     clientesVendaConcluida.forEach(cliente => {
-        if (cliente.imovelInteresseId) {
-            const imovel = imoveis.find(i => i.id === cliente.imovelInteresseId);
-            if (imovel && imovel.precoVenda) {
-                totalVendas += imovel.precoVenda;
-            }
-        }
+        totalVendas += cliente.valorVenda || 0;
     });
     
     // Formatar e exibir o total
@@ -3711,8 +3721,7 @@ renderDashboard: () => {
     
     document.getElementById('visitas-badge').style.display = visitasHoje.length > 0 ? 'inline-block' : 'none';
     document.getElementById('negociacoes-badge').style.display = imoveisReservados.length > 0 ? 'inline-block' : 'none';
-},
-            
+},            
             renderAniversariantes: () => {
                 const hoje = new Date();
                 const diaHoje = hoje.getDate();
@@ -4235,68 +4244,73 @@ renderDashboard: () => {
             },
 
             renderClientes: (filter = '') => {
-                const list = document.getElementById('clientes-list');
-                if (!list) return;
-                
-                let filtered = UI.data.clientes;
-                
-                if(filter) {
-                    const termo = filter.toLowerCase();
-                    filtered = filtered.filter(c => 
-                        c.nome.toLowerCase().includes(termo) ||
-                        (c.email && c.email.toLowerCase().includes(termo)) ||
-                        c.telefone.toLowerCase().includes(termo)
-                    );
-                }
-                
-                if(filtered.length === 0) {
-                    list.innerHTML = `<div class="empty-state"><i class="fas fa-user-plus"></i><p>Nenhum cliente encontrado.</p></div>`;
-                    return;
-                }
+    const list = document.getElementById('clientes-list');
+    if (!list) return;
+    
+    let filtered = UI.data.clientes;
+    
+    if(filter) {
+        const termo = filter.toLowerCase();
+        filtered = filtered.filter(c => 
+            c.nome.toLowerCase().includes(termo) ||
+            (c.email && c.email.toLowerCase().includes(termo)) ||
+            c.telefone.toLowerCase().includes(termo)
+        );
+    }
+    
+    if(filtered.length === 0) {
+        list.innerHTML = `<div class="empty-state"><i class="fas fa-user-plus"></i><p>Nenhum cliente encontrado.</p></div>`;
+        return;
+    }
 
-                list.innerHTML = filtered.map(c => {
-                    const hoje = new Date();
-                    const nascimento = c.dataNascimento ? new Date(c.dataNascimento) : null;
-                    const isAniversario = nascimento && 
-                                         nascimento.getDate() === hoje.getDate() && 
-                                         (nascimento.getMonth() + 1) === (hoje.getMonth() + 1);
-                    
-                    const idade = Utils.calculateAge(c.dataNascimento);
-                    const imovelInteresse = c.imovelInteresseId ? 
-                        UI.data.imoveis.find(i => i.id === c.imovelInteresseId) : null;
-                    
-                    const etapa = UI.data.funilEtapas.find(e => e.id === c.etapaFunil) || UI.data.funilEtapas[0];
-                    
-                    return `
-                        <div class="client-card" onclick="App.cliente.edit('${c.id}')">
-                            ${isAniversario ? `<div class="property-badge badge-pink" style="top: 12px; right: 12px; left: auto;">🎂</div>` : ''}
-                            <div class="client-header">
-                                <div class="client-name">${c.nome} ${idade ? `(${idade} anos)` : ''}</div>
-                                <span class="client-type" style="background: ${etapa.cor}; color: white;">${etapa.nome}</span>
-                            </div>
-                            <div class="client-info">
-                                <div class="client-row"><i class="fas fa-phone"></i> ${c.telefone}</div>
-                                ${c.email ? `<div class="client-row"><i class="fas fa-envelope"></i> ${c.email}</div>` : ''}
-                                ${c.dataNascimento ? `<div class="client-row"><i class="fas fa-birthday-cake"></i> ${Utils.formatDate(c.dataNascimento)}</div>` : ''}
-                                ${imovelInteresse ? `<div class="client-row"><i class="fas fa-home"></i> Interesse: ${imovelInteresse.titulo.substring(0, 30)}...</div>` : ''}
-                                ${c.faixaPreco ? `<div class="client-row"><i class="fas fa-search-dollar"></i> ${c.faixaPreco}</div>` : ''}
-                                <div class="client-row"><i class="fas fa-filter"></i> Funil: ${etapa.nome} (${c.dataEntradaFunil ? Utils.calculateDaysInStage(c.dataEntradaFunil) : '0'} dias)</div>
-                            </div>
-                            <div class="client-actions">
-                                <button class="btn-whatsapp-client" onclick="event.stopPropagation(); App.cliente.whatsappPersonalizado('${c.id}')">
-                                    <i class="fab fa-whatsapp"></i> WhatsApp
-                                </button>
-                                <button class="btn-email-client" onclick="event.stopPropagation(); App.cliente.email('${c.id}')">
-                                    <i class="fas fa-envelope"></i> Email
-                                </button>
-                                <button class="btn-sm btn-light" onclick="event.stopPropagation(); App.cliente.edit('${c.id}')">
-                                    <i class="fas fa-edit"></i> Editar
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            },
+    list.innerHTML = filtered.map(c => {
+        const hoje = new Date();
+        const nascimento = c.dataNascimento ? new Date(c.dataNascimento) : null;
+        const isAniversario = nascimento && 
+                             nascimento.getDate() === hoje.getDate() && 
+                             (nascimento.getMonth() + 1) === (hoje.getMonth() + 1);
+        
+        const idade = Utils.calculateAge(c.dataNascimento);
+        const imovelInteresse = c.imovelInteresseId ? 
+            UI.data.imoveis.find(i => i.id === c.imovelInteresseId) : null;
+        
+        const etapa = UI.data.funilEtapas.find(e => e.id === c.etapaFunil) || UI.data.funilEtapas[0];
+        
+        // Adicionar informação do valor da venda
+        const valorVendaInfo = c.valorVenda && c.valorVenda > 0 && c.etapaFunil === 'venda' ? 
+            `<div class="client-row"><i class="fas fa-money-bill-wave" style="color: var(--success);"></i> Valor Venda: ${Utils.formatCurrency(c.valorVenda)}</div>` : '';
+        
+        return `
+            <div class="client-card" onclick="App.cliente.edit('${c.id}')">
+                ${isAniversario ? `<div class="property-badge badge-pink" style="top: 12px; right: 12px; left: auto;">🎂</div>` : ''}
+                <div class="client-header">
+                    <div class="client-name">${c.nome} ${idade ? `(${idade} anos)` : ''}</div>
+                    <span class="client-type" style="background: ${etapa.cor}; color: white;">${etapa.nome}</span>
+                </div>
+                <div class="client-info">
+                    <div class="client-row"><i class="fas fa-phone"></i> ${c.telefone}</div>
+                    ${c.email ? `<div class="client-row"><i class="fas fa-envelope"></i> ${c.email}</div>` : ''}
+                    ${c.dataNascimento ? `<div class="client-row"><i class="fas fa-birthday-cake"></i> ${Utils.formatDate(c.dataNascimento)}</div>` : ''}
+                    ${imovelInteresse ? `<div class="client-row"><i class="fas fa-home"></i> Interesse: ${imovelInteresse.titulo.substring(0, 30)}...</div>` : ''}
+                    ${c.faixaPreco ? `<div class="client-row"><i class="fas fa-search-dollar"></i> ${c.faixaPreco}</div>` : ''}
+                    ${valorVendaInfo}
+                    <div class="client-row"><i class="fas fa-filter"></i> Funil: ${etapa.nome} (${c.dataEntradaFunil ? Utils.calculateDaysInStage(c.dataEntradaFunil) : '0'} dias)</div>
+                </div>
+                <div class="client-actions">
+                    <button class="btn-whatsapp-client" onclick="event.stopPropagation(); App.cliente.whatsappPersonalizado('${c.id}')">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </button>
+                    <button class="btn-email-client" onclick="event.stopPropagation(); App.cliente.email('${c.id}')">
+                        <i class="fas fa-envelope"></i> Email
+                    </button>
+                    <button class="btn-sm btn-light" onclick="event.stopPropagation(); App.cliente.edit('${c.id}')">
+                        <i class="fas fa-edit"></i> Editar
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+},
 
             renderImoveis: (filter = '', tipoFilter = '', statusFilter = '') => {
                 const list = document.getElementById('imoveis-list');
@@ -5166,43 +5180,55 @@ renderDashboard: () => {
             },
             
             generateSalesReport: (start, end) => {
-                // Primeiro: clientes na etapa "venda" do funil
-                const clientesVendaConcluida = UI.data.clientes.filter(cliente => 
-                    cliente.etapaFunil === 'venda'
-                );
-                
-                // Segundo: imóveis vendidos no período
-                const imoveisVendidos = UI.data.imoveis.filter(imovel => {
-                    if (!imovel.dataVenda) return false;
-                    const dataVenda = new Date(imovel.dataVenda);
-                    return dataVenda >= start && dataVenda <= end && (imovel.status === 'vendido' || imovel.status === 'alugado');
-                });
-                
-                // Terceiro: relacionar clientes com imóveis vendidos
-                const vendasDetalhadas = [];
-                const clientesComVenda = new Set();
-                
-                // Para cada cliente na etapa "venda", tentar encontrar seu imóvel
-                clientesVendaConcluida.forEach(cliente => {
-                    // Verificar se cliente tem imóvel de interesse
-                    if (cliente.imovelInteresseId) {
-                        const imovelVendido = imoveisVendidos.find(i => i.id === cliente.imovelInteresseId);
-                        if (imovelVendido) {
-                            vendasDetalhadas.push({
-                                clienteId: cliente.id,
-                                clienteNome: cliente.nome,
-                                clienteTelefone: cliente.telefone,
-                                imovelId: imovelVendido.id,
-                                imovelTitulo: imovelVendido.titulo,
-                                imovelTipo: imovelVendido.tipo,
-                                valor: imovelVendido.precoVenda || imovelVendido.precoAluguel || 0,
-                                dataVenda: imovelVendido.dataVenda,
-                                status: imovelVendido.status,
-                                transacao: imovelVendido.transacao
-                            });
-                            clientesComVenda.add(cliente.id);
-                        }
-                    }
+    // Clientes na etapa "venda" com valor de venda
+    const clientesVendaConcluida = UI.data.clientes.filter(cliente => 
+        cliente.etapaFunil === 'venda' && cliente.valorVenda > 0
+    );
+    
+    // Filtrar por data se necessário
+    const clientesNoPeriodo = clientesVendaConcluida.filter(cliente => {
+        if (!cliente.dataEntradaFunil) return false;
+        const dataVenda = new Date(cliente.dataEntradaFunil);
+        return dataVenda >= start && dataVenda <= end;
+    });
+    
+    let totalVendas = 0;
+    const vendasDetalhadas = [];
+    
+    clientesNoPeriodo.forEach(cliente => {
+        const imovel = cliente.imovelInteresseId ? 
+            UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId) : null;
+        
+        totalVendas += cliente.valorVenda || 0;
+        
+        vendasDetalhadas.push({
+            clienteId: cliente.id,
+            clienteNome: cliente.nome,
+            clienteTelefone: cliente.telefone,
+            imovelId: imovel ? imovel.id : null,
+            imovelTitulo: imovel ? imovel.titulo : 'Não especificado',
+            imovelTipo: imovel ? imovel.tipo : 'Não especificado',
+            valor: cliente.valorVenda || 0,
+            dataVenda: cliente.dataEntradaFunil || new Date().toISOString().split('T')[0],
+            status: imovel ? imovel.status : 'vendido',
+            transacao: imovel ? imovel.transacao : 'venda'
+        });
+    });
+    
+    // ... resto da função permanece similar, mas usa os novos dados
+    
+    // CONTINUAÇÃO DA FUNÇÃO (mantenha o resto do código igual, mas use vendasDetalhadas)
+    const vendasPorData = {};
+    vendasDetalhadas.forEach(venda => {
+        if (!venda.dataVenda) return;
+        const data = venda.dataVenda.split('T')[0];
+        if (!vendasPorData[data]) {
+            vendasPorData[data] = [];
+        }
+        vendasPorData[data].push(venda);
+    });
+    
+    // ... continua com o resto do relatório usando vendasDetalhadas
                     
                     // Também verificar se há imóveis vendidos associados a este cliente de outra forma
                     imoveisVendidos.forEach(imovel => {
@@ -5227,14 +5253,14 @@ renderDashboard: () => {
                 
                 // Agrupar vendas por data
                 const vendasPorData = {};
-                vendasDetalhadas.forEach(venda => {
-                    if (!venda.dataVenda) return;
-                    const data = venda.dataVenda.split('T')[0];
-                    if (!vendasPorData[data]) {
-                        vendasPorData[data] = [];
-                    }
-                    vendasPorData[data].push(venda);
-                });
+    vendasDetalhadas.forEach(venda => {
+        if (!venda.dataVenda) return;
+        const data = venda.dataVenda.split('T')[0];
+        if (!vendasPorData[data]) {
+            vendasPorData[data] = [];
+        }
+        vendasPorData[data].push(venda);
+    });
                 
                 const datasOrdenadas = Object.keys(vendasPorData).sort();
                 
@@ -5863,33 +5889,36 @@ renderDashboard: () => {
                 document.querySelectorAll('.modal-overlay').forEach(el => el.classList.remove('active'));
             },
 
-            openNewCliente: (fromVisita = false) => {
-                const form = document.getElementById('form-cliente');
-                if (!form) return;
-                
-                form.reset();
-                document.getElementById('c-id').value = '';
-                document.getElementById('title-cliente').innerText = 'Novo Cliente';
-                
-                const imovelSelect = document.getElementById('c-imovel-interesse');
-                if (imovelSelect) {
-                    imovelSelect.innerHTML = '<option value="">Selecione um imóvel...</option>';
-                    UI.data.imoveis.forEach(i => {
-                        imovelSelect.innerHTML += `<option value="${i.id}">${i.titulo.substring(0, 40)}...</option>`;
-                    });
-                }
-                
-                const etapaSelect = document.getElementById('c-etapa-funil');
-                if (etapaSelect) {
-                    etapaSelect.innerHTML = '';
-                    UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem).forEach(etapa => {
-                        etapaSelect.innerHTML += `<option value="${etapa.id}">${etapa.nome}</option>`;
-                    });
-                }
-                
-                UI.openModal('cliente');
-            },
-
+openNewCliente: (fromVisita = false) => {
+    const form = document.getElementById('form-cliente');
+    if (!form) return;
+    
+    form.reset();
+    document.getElementById('c-id').value = '';
+    document.getElementById('title-cliente').innerText = 'Novo Cliente';
+    
+    const imovelSelect = document.getElementById('c-imovel-interesse');
+    if (imovelSelect) {
+        imovelSelect.innerHTML = '<option value="">Selecione um imóvel...</option>';
+        UI.data.imoveis.forEach(i => {
+            imovelSelect.innerHTML += `<option value="${i.id}">${i.titulo.substring(0, 40)}...</option>`;
+        });
+    }
+    
+    const etapaSelect = document.getElementById('c-etapa-funil');
+    if (etapaSelect) {
+        etapaSelect.innerHTML = '';
+        UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem).forEach(etapa => {
+            etapaSelect.innerHTML += `<option value="${etapa.id}">${etapa.nome}</option>`;
+        });
+        etapaSelect.value = 'lead';
+    }
+    
+    // Garantir que campo de valor está escondido inicialmente
+    document.getElementById('c-valor-venda-group').style.display = 'none';
+    
+    UI.openModal('cliente');
+},
             openNewImovel: () => {
                 const form = document.getElementById('form-imovel');
                 if (!form) return;
@@ -6065,30 +6094,29 @@ renderDashboard: () => {
         dataEntradaFunil: new Date().toISOString().split('T')[0]
     };
     
-                    
-                    const existingIdx = UI.data.clientes.findIndex(c => c.id === id);
-                    if(existingIdx >= 0) {
-                        if(UI.data.clientes[existingIdx].dataEntradaFunil && UI.data.clientes[existingIdx].etapaFunil === etapaFunil) {
-                            newClient.dataEntradaFunil = UI.data.clientes[existingIdx].dataEntradaFunil;
-                        }
-                        UI.data.clientes[existingIdx] = newClient;
-                        await DB.put('clientes', newClient);
-                    } else {
-                        UI.data.clientes.push(newClient);
-                        await DB.add('clientes', newClient);
-                    }
+    const existingIdx = UI.data.clientes.findIndex(c => c.id === id);
+    if(existingIdx >= 0) {
+        if(UI.data.clientes[existingIdx].dataEntradaFunil && UI.data.clientes[existingIdx].etapaFunil === etapaFunil) {
+            newClient.dataEntradaFunil = UI.data.clientes[existingIdx].dataEntradaFunil;
+        }
+        UI.data.clientes[existingIdx] = newClient;
+        await DB.put('clientes', newClient);
+    } else {
+        UI.data.clientes.push(newClient);
+        await DB.add('clientes', newClient);
+    }
 
-                    UI.data.clientes = await Storage.getClientes();
-                    
-                    Utils.toast('Cliente salvo com sucesso!');
-                    
-                    UI.closeModals();
-                    UI.renderClientes();
-                    UI.renderDashboard();
-                    UI.renderFunil();
-                },
+    UI.data.clientes = await Storage.getClientes();
+    
+    Utils.toast('Cliente salvo com sucesso!');
+    
+    UI.closeModals();
+    UI.renderClientes();
+    UI.renderDashboard();
+    UI.renderFunil();
+},
                 
-                edit: async (id) => {
+edit: async (id) => {
     const cliente = UI.data.clientes.find(x => x.id === id);
     if(!cliente) return;
     
@@ -6107,47 +6135,32 @@ renderDashboard: () => {
                                                     Utils.formatCurrency(cliente.valorVenda) : '';
     
     document.getElementById('title-cliente').innerText = 'Editar Cliente';
-                    
-                    const imovelSelect = document.getElementById('c-imovel-interesse');
-                    if (imovelSelect) {
-                        imovelSelect.innerHTML = '<option value="">Selecione um imóvel...</option>';
-                        UI.data.imoveis.forEach(i => {
-                            imovelSelect.innerHTML += `<option value="${i.id}">${i.titulo.substring(0, 40)}...</option>`;
-                        });
-                        imovelSelect.value = cliente.imovelInteresseId || '';
-                    }
-                    
-                    const etapaSelect = document.getElementById('c-etapa-funil');
+    
+    const imovelSelect = document.getElementById('c-imovel-interesse');
+    if (imovelSelect) {
+        imovelSelect.innerHTML = '<option value="">Selecione um imóvel...</option>';
+        UI.data.imoveis.forEach(i => {
+            imovelSelect.innerHTML += `<option value="${i.id}">${i.titulo.substring(0, 40)}...</option>`;
+        });
+        imovelSelect.value = cliente.imovelInteresseId || '';
+    }
+    
+    const etapaSelect = document.getElementById('c-etapa-funil');
     if (etapaSelect) {
         etapaSelect.innerHTML = '';
         UI.data.funilEtapas.sort((a, b) => a.ordem - b.ordem).forEach(etapa => {
             etapaSelect.innerHTML += `<option value="${etapa.id}">${etapa.nome}</option>`;
         });
         etapaSelect.value = cliente.etapaFunil || 'lead';
-        
-        // Mostrar/ocultar campo de valor
-        etapaSelect.onchange = function() {
-            const valorVendaGroup = document.getElementById('c-valor-venda-group');
-            if (this.value === 'venda') {
-                valorVendaGroup.style.display = 'block';
-            } else {
-                valorVendaGroup.style.display = 'none';
-            }
-        };
-        
-        // Executar para estado atual
-        setTimeout(() => {
-            etapaSelect.onchange();
-            // Se for etapa venda, mostrar o campo
-            if (cliente.etapaFunil === 'venda') {
-                document.getElementById('c-valor-venda-group').style.display = 'block';
-            }
-        }, 100);
     }
     
+    // Mostrar/ocultar campo de valor baseado na etapa
+    setTimeout(() => {
+        Utils.toggleValorVendaField();
+    }, 100);
+    
     UI.openModal('cliente');
-},
-                
+},                
                 delete: async (id) => {
                     if(!confirm('Tem certeza que deseja excluir este cliente?')) return;
                     
