@@ -13,6 +13,7 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
 
     <style>
         :root {
@@ -37,6 +38,7 @@
             --type-outro: #64748b;
             --type-ligacao: #0ea5e9;
             --type-whatsapp: #25D366;
+            --type-reuniao: #8b5cf6;
             
             --funnel-lead: #93c5fd;
             --funnel-contato: #60a5fa;
@@ -58,12 +60,7 @@
             --shadow-float: 0 10px 15px -3px rgb(0 0 0 / 0.1);
         }
 
-        * { 
-            margin: 0; 
-            padding: 0; 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body {
             font-family: 'Inter', sans-serif;
@@ -77,14 +74,12 @@
             user-select: none;
             position: fixed;
             width: 100%;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
         }
 
         header {
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
             padding: var(--safe-top) 16px 10px;
             height: var(--header-height);
             display: flex;
@@ -94,316 +89,37 @@
             top: 0; left: 0; right: 0;
             z-index: 50;
             border-bottom: 1px solid rgba(0,0,0,0.05);
-            box-shadow: var(--shadow-sm);
         }
 
-        .brand {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: var(--dark);
-            letter-spacing: -0.5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .brand { font-size: 1.25rem; font-weight: 800; color: var(--dark); letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
         .brand span { color: var(--primary); }
         
         .header-actions { display: flex; gap: 12px; }
-        .icon-btn {
-            background: none; border: none; font-size: 1.2rem;
-            color: var(--secondary); padding: 8px;
-            border-radius: 50%; transition: 0.2s;
-            cursor: pointer;
-        }
-        .icon-btn:active { background: #f1f5f9; color: var(--primary); transform: scale(0.95); }
+        .icon-btn { background: none; border: none; font-size: 1.2rem; color: var(--secondary); padding: 8px; border-radius: 50%; cursor: pointer; }
 
         main {
             flex: 1;
             overflow-y: auto;
-            overflow-x: hidden;
             padding: calc(var(--header-height) + 16px) 16px calc(var(--nav-height) + 80px);
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
             width: 100%;
         }
 
-        .view { 
-            display: none; 
-            animation: fadeIn 0.3s ease;
-            width: 100%;
-        }
+        .view { display: none; animation: fadeIn 0.3s ease; width: 100%; }
         .view.active { display: block; }
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(10px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-bottom: 24px;
-            width: 100%;
-        }
-
-        .stat-card {
-            background: var(--surface);
-            padding: 16px;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            border: 1px solid var(--border);
-            min-height: 90px;
-        }
-        .stat-card:active { transform: scale(0.98); box-shadow: var(--shadow-sm); }
-
-        .stat-icon {
-            width: 32px; height: 32px;
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.9rem;
-        }
-        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--dark); line-height: 1; }
+        /* Cards e Layout */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
+        .stat-card { background: var(--surface); padding: 16px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+        .stat-value { font-size: 1.3rem; font-weight: 700; color: var(--dark); }
         .stat-label { font-size: 0.8rem; color: var(--secondary); font-weight: 500; }
 
-        .bg-blue { background: #dbeafe; color: var(--primary); }
-        .bg-green { background: #d1fae5; color: var(--success); }
-        .bg-orange { background: #ffedd5; color: var(--warning); }
-        .bg-red { background: #fee2e2; color: var(--danger); }
-        .bg-purple { background: #f3e8ff; color: #8b5cf6; }
-        .bg-cyan { background: #cffafe; color: #06b6d4; }
+        .property-card, .client-card, .schedule-card { background: var(--surface); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow-sm); border: 1px solid var(--border); transition: transform 0.2s; }
+        .property-card:active, .client-card:active { transform: scale(0.98); }
 
-        .section-title {
-            font-size: 1.1rem; font-weight: 700; margin-bottom: 12px;
-            display: flex; justify-content: space-between; align-items: center;
-            width: 100%;
-        }
-
-        .search-container {
-            position: relative; margin-bottom: 16px;
-            width: 100%;
-        }
-        .search-input {
-            width: 100%; padding: 12px 12px 12px 40px;
-            border: 1px solid var(--border); border-radius: var(--radius-md);
-            background: var(--surface); font-size: 1rem; outline: none;
-            -webkit-appearance: none;
-            font-family: 'Inter', sans-serif;
-        }
-        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-        .search-icon {
-            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-            color: var(--secondary);
-            pointer-events: none;
-        }
-
-        .property-card {
-            background: var(--surface);
-            border-radius: var(--radius-md);
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-sm);
-            position: relative;
-            overflow: hidden;
-            border-left: 4px solid transparent;
-            transition: transform 0.2s;
-            cursor: pointer;
-            width: 100%;
-            border: 1px solid var(--border);
-        }
-        .property-card:active { transform: scale(0.98); }
-
-        .property-image {
-            width: 100%; height: 180px;
-            object-fit: cover;
-            background: #e2e8f0;
-            display: flex; align-items: center; justify-content: center;
-            color: var(--secondary);
-            position: relative;
-        }
-
-        .property-badge {
-            position: absolute; top: 12px; left: 12px;
-            padding: 4px 10px; border-radius: 20px;
-            font-size: 0.7rem; font-weight: 700;
-            z-index: 2;
-        }
-        .badge-sale { background: var(--primary); color: white; }
-        .badge-rent { background: var(--success); color: white; }
-        .badge-featured { background: var(--warning); color: white; }
-        .badge-success { background: var(--success); color: white; }
-        .badge-warning { background: var(--warning); color: white; }
-
-        .property-content { padding: 16px; }
-        .property-title { 
-            font-weight: 700; font-size: 1rem; color: var(--dark);
-            margin-bottom: 4px; line-height: 1.3;
-        }
-        .property-address { 
-            font-size: 0.85rem; color: var(--secondary); 
-            margin-bottom: 8px; display: flex; align-items: center; gap: 4px;
-        }
-        .property-features {
-            display: flex; gap: 12px; margin-bottom: 12px;
-            flex-wrap: wrap;
-        }
-        .feature {
-            display: flex; flex-direction: column; align-items: center;
-            font-size: 0.75rem; color: var(--secondary);
-            min-width: 50px;
-        }
-        .feature i { font-size: 1rem; margin-bottom: 2px; color: var(--primary); }
-        
-        .property-price {
-            font-size: 1.3rem; font-weight: 800; color: var(--primary);
-            margin-bottom: 8px;
-        }
-        .property-price .period { font-size: 0.9rem; color: var(--secondary); }
-
-        .property-actions {
-            display: flex; gap: 8px; margin-top: 12px;
-            padding-top: 12px; border-top: 1px solid var(--border);
-            width: 100%;
-        }
-        .btn-sm {
-            flex: 1; padding: 8px; border-radius: 8px;
-            border: none; font-size: 0.85rem; font-weight: 600;
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-            cursor: pointer;
-            min-height: 36px;
-        }
-        .btn-light { background: #f1f5f9; color: var(--secondary); }
-        .btn-primary-soft { background: #dbeafe; color: var(--primary); }
-        .btn-whatsapp { background: #dcfce7; color: #16a34a; }
-
-        .client-card {
-            background: var(--surface);
-            border-radius: var(--radius-md);
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: var(--shadow-sm);
-            cursor: pointer;
-            transition: transform 0.2s;
-            position: relative;
-            border: 1px solid var(--border);
-            width: 100%;
-        }
-        .client-card:active { transform: scale(0.98); }
-
-        .client-header {
-            display: flex; justify-content: space-between; align-items: flex-start;
-            margin-bottom: 12px;
-        }
-        .client-name { font-weight: 700; font-size: 1rem; color: var(--dark); }
-        .client-type {
-            font-size: 0.7rem; padding: 3px 8px; border-radius: 99px;
-            font-weight: 600;
-        }
-
-        .client-info {
-            display: flex; flex-direction: column; gap: 6px;
-        }
-        .client-row {
-            display: flex; align-items: center; gap: 8px;
-            font-size: 0.85rem; color: var(--secondary);
-        }
-
-        .client-actions {
-            display: flex; gap: 8px; margin-top: 12px;
-            padding-top: 12px; border-top: 1px solid var(--border);
-            width: 100%;
-        }
-
-        .btn-whatsapp-client {
-            background: #25D366;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            flex: 1;
-            justify-content: center;
-            min-height: 36px;
-        }
-        
-        .btn-whatsapp-client:active {
-            transform: scale(0.95);
-            background: #1da851;
-        }
-
-        .btn-email-client {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            flex: 1;
-            justify-content: center;
-            min-height: 36px;
-        }
-        
-        .btn-email-client:active {
-            transform: scale(0.95);
-        }
-
-        .schedule-card {
-            background: var(--surface);
-            border-radius: var(--radius-md);
-            padding: 16px;
-            margin-bottom: 12px;
-            box-shadow: var(--shadow-sm);
-            border-left: 4px solid var(--type-visita);
-            cursor: pointer;
-            transition: transform 0.2s;
-            width: 100%;
-            border: 1px solid var(--border);
-        }
-        .schedule-card:active { transform: scale(0.98); }
-        
-        .schedule-card.visita { border-left-color: var(--type-visita); }
-        .schedule-card.reuniao-construtor { border-left-color: var(--type-reuniao-construtor); }
-        .schedule-card.reuniao-equipe { border-left-color: var(--type-reuniao-equipe); }
-        .schedule-card.documentacao { border-left-color: var(--type-documentacao); }
-        .schedule-card.plantao { border-left-color: var(--type-plantao); }
-        .schedule-card.generico { border-left-color: var(--type-generico); }
-        .schedule-card.outro { border-left-color: var(--type-outro); }
-        .schedule-card.ligacao { border-left-color: var(--type-ligacao); }
-        .schedule-card.whatsapp { border-left-color: var(--type-whatsapp); }
-        .schedule-card.reuniao { border-left-color: var(--type-reuniao); }
-
-        .schedule-header {
-            display: flex; justify-content: space-between; margin-bottom: 8px;
-            align-items: flex-start;
-        }
-        .schedule-type { 
-            font-size: 0.75rem; padding: 3px 8px; border-radius: 4px;
-            font-weight: 600; background: var(--type-visita); color: white;
-        }
-        
-        .schedule-time {
-            font-size: 0.85rem; color: var(--secondary);
-            display: flex; align-items: center; gap: 6px;
-            margin-bottom: 8px;
-            flex-wrap: wrap;
-        }
-        .schedule-title { font-weight: 600; color: var(--dark); margin-bottom: 4px; }
-        .schedule-notes { font-size: 0.85rem; color: var(--secondary); line-height: 1.4; }
+        .search-container { position: relative; margin-bottom: 16px; width: 100%; }
+        .search-input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 1rem; outline: none; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--secondary); }
 
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; right: 0;
@@ -414,280 +130,76 @@
             display: flex; justify-content: space-around;
             padding-bottom: var(--safe-bottom);
             z-index: 50;
-            width: 100%;
         }
 
-        .nav-item {
-            flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            color: #94a3b8; text-decoration: none;
-            font-size: 0.7rem; font-weight: 500;
-            gap: 4px; transition: 0.2s;
-            padding: 8px 4px;
-        }
-        .nav-item i { font-size: 1.25rem; margin-bottom: 2px; }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; text-decoration: none; font-size: 0.7rem; gap: 4px; }
         .nav-item.active { color: var(--primary); }
+        .nav-item i { font-size: 1.25rem; }
 
-        .fab {
-            position: fixed;
-            bottom: calc(var(--nav-height) + 16px);
-            right: 16px;
-            width: 56px; height: 56px;
-            background: var(--primary);
-            color: white;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem;
-            box-shadow: var(--shadow-float);
-            z-index: 40;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .fab:active { transform: scale(0.9) rotate(90deg); }
+        .fab { position: fixed; bottom: calc(var(--nav-height) + 16px); right: 16px; width: 56px; height: 56px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: var(--shadow-float); z-index: 40; border: none; }
 
-        .modal-overlay {
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
-            z-index: 100;
-            display: none; opacity: 0;
-            transition: opacity 0.3s;
-        }
+        /* Modais */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 100; display: none; opacity: 0; transition: opacity 0.3s; }
         .modal-overlay.active { display: flex; opacity: 1; }
-
-        .modal-sheet {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: var(--surface);
-            border-radius: 20px 20px 0 0;
-            padding: 24px 16px calc(24px + var(--safe-bottom));
-            transform: translateY(100%);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            max-height: 90vh;
-            overflow-y: auto;
-            z-index: 101;
-            width: 100%;
-        }
+        .modal-sheet { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-radius: 20px 20px 0 0; padding: 24px 16px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); max-height: 90vh; overflow-y: auto; z-index: 101; }
         .modal-overlay.active + .modal-sheet { transform: translateY(0); }
 
-        .sheet-handle {
-            width: 40px; height: 4px; background: #cbd5e1;
-            border-radius: 2px; margin: 0 auto 20px;
-        }
-
-        .form-group { margin-bottom: 16px; width: 100%; }
-        .form-label { 
-            display: block; font-size: 0.9rem; font-weight: 600; 
-            margin-bottom: 6px; color: var(--dark); 
-        }
-        .form-control {
-            width: 100%; padding: 14px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            font-size: 1rem;
-            background: #f8fafc;
-            -webkit-appearance: none;
-            font-family: 'Inter', sans-serif;
-        }
-        .form-control:focus { background: white; border-color: var(--primary); outline: none; }
-        textarea.form-control { min-height: 100px; resize: none; }
-
-        .btn-block {
-            width: 100%; padding: 16px;
-            border: none; border-radius: 12px;
-            font-size: 1rem; font-weight: 700;
-            background: var(--primary); color: white;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-
-        .details-card {
-            background: var(--surface);
-            border-radius: var(--radius-lg);
-            padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-md);
-            width: 100%;
-        }
+        .form-control { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 12px; font-size: 1rem; background: #f8fafc; font-family: 'Inter', sans-serif; margin-top: 5px; }
+        .btn-block { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; background: var(--primary); color: white; cursor: pointer; margin-top: 10px; }
         
-        .details-header {
-            display: flex; justify-content: space-between;
-            align-items: flex-start; margin-bottom: 20px;
-            padding-bottom: 15px; border-bottom: 1px solid var(--border);
-        }
-        
-        .details-title { font-size: 1.3rem; font-weight: 800; color: var(--dark); flex: 1; }
-        .details-price { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
-        
-        .details-section { margin-bottom: 20px; width: 100%; }
-        .details-section-title {
-            font-size: 0.9rem; font-weight: 700;
-            color: var(--primary); text-transform: uppercase;
-            letter-spacing: 0.5px; margin-bottom: 8px;
-            display: flex; align-items: center; gap: 8px;
-        }
-        
-        .details-info-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr);
-            gap: 12px; margin-bottom: 16px; width: 100%;
-        }
-        
-        .info-item { display: flex; flex-direction: column; gap: 4px; }
-        .info-label { font-size: 0.8rem; color: var(--secondary); font-weight: 500; }
-        .info-value { font-size: 1rem; color: var(--dark); font-weight: 600; }
-        
-        .details-actions {
-            display: flex; gap: 12px; margin-top: 24px;
-            padding-top: 20px; border-top: 1px solid var(--border);
-            width: 100%; flex-wrap: wrap;
-        }
-        
-        .btn-details {
-            flex: 1; padding: 12px; border-radius: 10px;
-            border: none; font-weight: 600;
-            display: flex; align-items: center;
-            justify-content: center; gap: 8px;
-            cursor: pointer; transition: transform 0.2s;
-            min-width: 120px; min-height: 44px;
-        }
-        
-        .btn-details-primary { background: var(--primary); color: white; }
-        .btn-details-whatsapp { background: #25D366; color: white; }
-        .btn-details-secondary { background: var(--light); color: var(--secondary); }
-        .btn-pdf { background: #ef4444; color: white; }
+        /* Funil */
+        .funnel-stage { padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid var(--primary); background: #f8fafc; cursor: pointer; }
+        .funnel-client-item { background: white; padding: 8px; border-radius: 6px; margin-top: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
 
-        .image-gallery {
-            display: grid; grid-template-columns: repeat(2, 1fr);
-            gap: 8px; margin-bottom: 16px; width: 100%;
-        }
+        /* Estilos de Cores */
+        .bg-blue { background: #dbeafe; color: var(--primary); }
+        .bg-green { background: #d1fae5; color: var(--success); }
+        .bg-purple { background: #f3e8ff; color: #8b5cf6; }
+        .badge { padding: 4px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; }
+        .badge-success { background: var(--success); color: white; }
 
-        .image-gallery-item {
-            position: relative; border-radius: 8px; overflow: hidden;
-            height: 120px; background: #f1f5f9; cursor: pointer;
-        }
-
-        .image-gallery-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-
-        .remove-image-btn {
-            position: absolute; top: 5px; right: 5px;
-            width: 24px; height: 24px; border-radius: 50%;
-            background: rgba(239, 68, 68, 0.9); color: white;
-            border: none; display: flex; align-items: center;
-            justify-content: center; font-size: 0.7rem; cursor: pointer;
-            z-index: 2;
-        }
-
-        .add-image-btn {
-            border: 2px dashed var(--border);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            color: var(--secondary); cursor: pointer; transition: all 0.2s;
-        }
-
-        .empty-state { text-align: center; padding: 40px 20px; color: var(--secondary); width: 100%; }
-        .empty-state i { font-size: 3rem; margin-bottom: 16px; opacity: 0.3; }
-        
-        .toast {
-            position: fixed; top: var(--header-height); left: 50%;
-            transform: translateX(-50%) translateY(-100px);
-            background: var(--dark); color: white;
-            padding: 12px 24px; border-radius: 50px;
-            font-size: 0.9rem; font-weight: 500;
-            box-shadow: var(--shadow-float); z-index: 200;
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex; align-items: center; gap: 8px;
-            white-space: nowrap; max-width: 90vw;
-        }
-        .toast.show { transform: translateX(-50%) translateY(20px); }
-
-        .carousel-container { position: relative; width: 100%; height: 250px; margin-bottom: 20px; border-radius: 12px; overflow: hidden; }
-        .carousel-slide { width: 100%; height: 100%; object-fit: cover; display: none; cursor: pointer; }
-        .carousel-slide.active { display: block; }
-        .carousel-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: white; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; z-index: 1; }
-        .carousel-arrow.prev { left: 10px; }
-        .carousel-arrow.next { right: 10px; }
-
-        .fullscreen-viewer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 1000; display: none;
-            flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; transition: opacity 0.3s;
-        }
-        .fullscreen-viewer.active { display: flex; opacity: 1; }
-        .fullscreen-image { max-width: 90%; max-height: 80%; object-fit: contain; }
-        .fullscreen-close { position: absolute; top: 20px; right: 20px; color: white; background: none; border: none; font-size: 1.5rem; cursor: pointer; }
-
-        .funnel-container { background: var(--surface); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px; box-shadow: var(--shadow-sm); width: 100%; }
-        .funnel-stage { padding: 12px 16px; border-radius: 8px; margin-bottom: 4px; cursor: pointer; border-left: 4px solid; background: rgba(255, 255, 255, 0.9); }
-
-        .loading { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.2rem; color: var(--primary); width: 100%; }
+        .loading { display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 1.2rem; color: var(--primary); }
         .loading i { margin-right: 10px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Melhoria: destaque para o campo de valor da venda */
-        #group-valor-venda {
-            background: #f0fdf4;
-            padding: 12px;
-            border-radius: 12px;
-            border: 1px solid #bbf7d0;
-            margin-top: 8px;
-        }
     </style>
 </head>
 <body>
-    <div id="loading" class="loading">
-        <i class="fas fa-spinner"></i> Inicializando sistema...
-    </div>
+    <div id="loading" class="loading"><i class="fas fa-spinner"></i> Inicializando sistema...</div>
 
-    <div id="app" style="display: none; width: 100%; height: 100%;">
+    <div id="app" style="display: none;">
         <header>
-            <div class="brand">
-                <i class="fas fa-home" style="color: var(--primary);"></i>
-                <span>Imobi</span>Pro
-            </div>
-            <div class="header-actions">
-                <button class="icon-btn" onclick="UI.openSettings()"><i class="fas fa-cog"></i></button>
-            </div>
+            <div class="brand"><i class="fas fa-home" style="color: var(--primary);"></i><span>Imobi</span>Pro</div>
+            <div class="header-actions"><button class="icon-btn" onclick="UI.openSettings()"><i class="fas fa-cog"></i></button></div>
         </header>
-
-        <div id="toast" class="toast">
-            <i class="fas fa-check-circle"></i> <span>Ação realizada!</span>
-        </div>
 
         <main>
             <div id="dashboard-view" class="view active">
-                <div class="section-title">Visão Geral</div>
                 <div class="stats-grid">
                     <div class="stat-card" onclick="UI.navigate('imoveis')">
-                        <div class="stat-icon bg-blue"><i class="fas fa-building"></i></div>
                         <div class="stat-value" id="dash-total-imoveis">0</div>
                         <div class="stat-label">Imóveis</div>
                     </div>
                     <div class="stat-card" onclick="UI.navigate('clientes')">
-                        <div class="stat-icon bg-green"><i class="fas fa-users"></i></div>
                         <div class="stat-value" id="dash-total-clientes">0</div>
                         <div class="stat-label">Clientes</div>
                     </div>
-                    <div class="stat-card" onclick="UI.navigate('agenda')">
-                        <div class="stat-icon bg-orange"><i class="fas fa-calendar-alt"></i></div>
-                        <div class="stat-value" id="dash-visitas">0</div>
-                        <div class="stat-label">Agenda Hoje</div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="dash-vendas-valor">R$ 0,00</div>
+                        <div class="stat-label">Vendas (Valor Real)</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon bg-red"><i class="fas fa-chart-line"></i></div>
-                        <div class="stat-value" id="dash-vendas">R$ 0</div>
-                        <div class="stat-label">Vendas Realizadas</div>
+                        <div class="stat-value" id="dash-comissao">R$ 0,00</div>
+                        <div class="stat-label">Minha Comissão</div>
                     </div>
                 </div>
-
-                <div class="section-title">Próximos Compromissos</div>
-                <div id="visitas-list"></div>
+                <h3>Agenda de Hoje</h3>
+                <div id="visitas-hoje-list"></div>
             </div>
 
             <div id="imoveis-view" class="view">
                 <div class="search-container">
                     <i class="fas fa-search search-icon"></i>
-                    <input type="text" class="search-input" placeholder="Buscar imóveis..." oninput="UI.searchImoveis(this.value)">
+                    <input type="text" class="search-input" placeholder="Buscar imóveis..." oninput="UI.renderImoveis(this.value)">
                 </div>
                 <div id="imoveis-list"></div>
             </div>
@@ -701,391 +213,242 @@
             </div>
 
             <div id="funil-view" class="view">
-                <div class="section-title">Funil de Vendas</div>
+                <h3>Funil de Vendas</h3>
                 <div id="funil-stages-container"></div>
-                <div id="funil-clientes-list"></div>
-            </div>
-
-            <div id="agenda-view" class="view">
-                <div class="section-title">Minha Agenda</div>
-                <div id="agenda-list"></div>
             </div>
         </main>
 
-        <div class="modal-overlay" id="overlay-cliente"></div>
-        <div class="modal-sheet" id="sheet-cliente">
-            <div class="sheet-handle"></div>
-            <h3 class="section-title" id="title-cliente">Novo Cliente</h3>
-            <form id="form-cliente" onsubmit="App.cliente.save(event)">
-                <input type="hidden" id="c-id">
-                <div class="form-group">
-                    <label class="form-label">Nome Completo</label>
-                    <input type="text" id="c-nome" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Etapa no Funil</label>
-                    <select id="c-etapa-funil" class="form-control" required onchange="UI.toggleValorVendaField(this.value)">
-                        </select>
-                </div>
-
-                <div class="form-group" id="group-valor-venda" style="display: none;">
-                    <label class="form-label">💰 Valor Real da Venda (R$)</label>
-                    <input type="text" id="c-valor-venda" class="form-control" placeholder="R$ 0,00" oninput="Utils.maskMoney(this)">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">WhatsApp</label>
-                    <input type="tel" id="c-telefone" class="form-control" placeholder="(00) 00000-0000" oninput="Utils.maskPhone(this)" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Imóvel de Interesse</label>
-                    <select id="c-imovel-interesse" class="form-control">
-                        <option value="">Selecione um imóvel...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Observações</label>
-                    <textarea id="c-observacoes" class="form-control" placeholder="Anotações..."></textarea>
-                </div>
-                <button type="submit" class="btn-block">Salvar Cliente</button>
-                <button type="button" class="btn-block" style="background: var(--light); color: var(--secondary);" onclick="UI.closeModals()">Cancelar</button>
-            </form>
-        </div>
-
-        <div class="modal-overlay" id="overlay-imovel"></div>
-        <div class="modal-sheet" id="sheet-imovel">
-            <div class="sheet-handle"></div>
-            <h3 class="section-title" id="title-imovel">Cadastrar Imóvel</h3>
-            <form id="form-imovel" onsubmit="App.imovel.save(event)">
-                <input type="hidden" id="i-id">
-                <div class="form-group">
-                    <label class="form-label">Título do Anúncio</label>
-                    <input type="text" id="i-titulo" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Preço de Venda (R$)</label>
-                    <input type="text" id="i-preco-venda" class="form-control" oninput="Utils.maskMoney(this)">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Endereço</label>
-                    <input type="text" id="i-endereco" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Descrição</label>
-                    <textarea id="i-descricao" class="form-control"></textarea>
-                </div>
-                <button type="submit" class="btn-block">Salvar Imóvel</button>
-            </form>
-        </div>
-
-        <div class="modal-overlay" id="overlay-settings"></div>
-        <div class="modal-sheet" id="sheet-settings">
-            <div class="sheet-handle"></div>
-            <h3 class="section-title">Configurações & Backup</h3>
-            <button class="btn-block" onclick="App.backup.exportData()">Exportar Backup (JSON)</button>
-            <button class="btn-block" style="background: var(--secondary);" onclick="document.getElementById('import-file').click()">Importar Backup</button>
-            <input type="file" id="import-file" style="display:none" onchange="App.backup.importData(this)">
-            <button class="btn-block" style="background: var(--danger);" onclick="App.backup.clearData()">Resetar Sistema</button>
-            <button class="btn-block" style="background: var(--light); color: var(--secondary);" onclick="UI.closeModals()">Fechar</button>
-        </div>
-
-        <button class="fab" id="main-fab" onclick="UI.openNewImovel()">
-            <i class="fas fa-plus"></i>
-        </button>
-
         <nav class="bottom-nav">
-            <a href="#" class="nav-item active" data-target="dashboard-view" onclick="UI.switchTab(this); return false;">
-                <i class="fas fa-home"></i> <span>Início</span>
-            </a>
-            <a href="#" class="nav-item" data-target="imoveis-view" onclick="UI.switchTab(this); return false;">
-                <i class="fas fa-building"></i> <span>Imóveis</span>
-            </a>
-            <a href="#" class="nav-item" data-target="clientes-view" onclick="UI.switchTab(this); return false;">
-                <i class="fas fa-users"></i> <span>Clientes</span>
-            </a>
-            <a href="#" class="nav-item" data-target="funil-view" onclick="UI.switchTab(this); return false;">
-                <i class="fas fa-filter"></i> <span>Funil</span>
-            </a>
-            <a href="#" class="nav-item" data-target="agenda-view" onclick="UI.switchTab(this); return false;">
-                <i class="fas fa-calendar-alt"></i> <span>Agenda</span>
-            </a>
+            <a href="#" class="nav-item active" data-target="dashboard-view" onclick="UI.switchTab(this)"><i class="fas fa-home"></i>Início</a>
+            <a href="#" class="nav-item" data-target="imoveis-view" onclick="UI.switchTab(this)"><i class="fas fa-building"></i>Imóveis</a>
+            <a href="#" class="nav-item" data-target="clientes-view" onclick="UI.switchTab(this)"><i class="fas fa-users"></i>Clientes</a>
+            <a href="#" class="nav-item" data-target="funil-view" onclick="UI.switchTab(this)"><i class="fas fa-filter"></i>Funil</a>
         </nav>
+
+        <button class="fab" id="main-fab" onclick="UI.openNewImovel()"><i class="fas fa-plus"></i></button>
+    </div>
+
+    <div class="modal-overlay" id="overlay-venda"></div>
+    <div class="modal-sheet" id="sheet-venda">
+        <h3 id="title-venda">Confirmar Venda</h3>
+        <p id="venda-info" style="margin-top: 10px; color: var(--secondary);"></p>
+        <div style="margin-top: 20px;">
+            <label class="form-label">Valor Real da Venda (R$)</label>
+            <input type="text" id="venda-valor-real" class="form-control" oninput="Utils.maskMoney(this)">
+            <small>Este valor será usado para o cálculo da sua comissão.</small>
+        </div>
+        <button class="btn-block" onclick="App.venda.finalizar()">Confirmar Venda</button>
+        <button class="btn-block" style="background: var(--light); color: var(--secondary);" onclick="UI.closeModals()">Cancelar</button>
     </div>
 
     <script>
-        // Banco de Dados IndexedDB
         const DB = {
             name: 'ImobiProDB',
-            version: 10,
+            version: 8,
             db: null,
             init: function() {
                 return new Promise((resolve) => {
-                    const request = indexedDB.open(this.name, this.version);
-                    request.onupgradeneeded = (e) => {
+                    const req = indexedDB.open(this.name, this.version);
+                    req.onupgradeneeded = (e) => {
                         const db = e.target.result;
                         if (!db.objectStoreNames.contains('clientes')) db.createObjectStore('clientes', { keyPath: 'id' });
                         if (!db.objectStoreNames.contains('imoveis')) db.createObjectStore('imoveis', { keyPath: 'id' });
                         if (!db.objectStoreNames.contains('visitas')) db.createObjectStore('visitas', { keyPath: 'id' });
-                        if (!db.objectStoreNames.contains('funilEtapas')) db.createObjectStore('funilEtapas', { keyPath: 'id' });
+                        if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'id' });
                     };
-                    request.onsuccess = (e) => { this.db = e.target.result; resolve(); };
+                    req.onsuccess = (e) => { this.db = e.target.result; resolve(); };
                 });
             },
-            getAll: (store) => new Promise(res => {
-                const tx = DB.db.transaction(store, 'readonly');
-                tx.objectStore(store).getAll().onsuccess = (e) => res(e.target.result);
-            }),
-            put: (store, data) => DB.db.transaction(store, 'readwrite').objectStore(store).put(data),
-            delete: (store, id) => DB.db.transaction(store, 'readwrite').objectStore(store).delete(id),
-            clear: (store) => DB.db.transaction(store, 'readwrite').objectStore(store).clear()
-        };
-
-        const Utils = {
-            id: () => Math.random().toString(36).substr(2, 9),
-            formatCurrency: (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0),
-            parseCurrency: (s) => {
-                if (!s) return 0;
-                let clean = s.replace(/[^\d]/g, '');
-                return parseFloat(clean) / 100 || 0;
+            getAll: async function(store) {
+                return new Promise((resolve) => {
+                    const tx = this.db.transaction(store, 'readonly');
+                    tx.objectStore(store).getAll().onsuccess = (e) => resolve(e.target.result);
+                });
             },
-            maskMoney: (i) => {
-                let v = i.value.replace(/\D/g, '');
-                v = (v / 100).toFixed(2).replace('.', ',');
-                v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-                i.value = v ? 'R$ ' + v : '';
-            },
-            maskPhone: (i) => {
-                let v = i.value.replace(/\D/g, '');
-                if (v.length > 11) v = v.slice(0, 11);
-                if (v.length > 10) i.value = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
-                else if (v.length > 2) i.value = `(${v.slice(0,2)}) ${v.slice(2,6)}-${v.slice(6)}`;
-            },
-            toast: (msg) => {
-                const t = document.getElementById('toast');
-                t.querySelector('span').innerText = msg;
-                t.classList.add('show');
-                setTimeout(() => t.classList.remove('show'), 3000);
+            put: async function(store, data) {
+                return new Promise((resolve) => {
+                    const tx = this.db.transaction(store, 'readwrite');
+                    tx.objectStore(store).put(data).onsuccess = () => resolve();
+                });
             }
         };
 
-        const Storage = {
-            getFunilEtapas: async () => {
-                const e = await DB.getAll('funilEtapas');
-                return e.length ? e : [
-                    { id: 'lead', nome: 'Lead', cor: '#93c5fd', ordem: 1 },
-                    { id: 'contato', nome: 'Contato Realizado', cor: '#60a5fa', ordem: 2 },
-                    { id: 'venda', nome: 'Venda Concluída', cor: '#047857', ordem: 3 }
-                ];
+        const Utils = {
+            id: () => Date.now().toString(36),
+            formatMoney: (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            parseMoney: (s) => parseFloat(s.replace(/[^\d,]/g, '').replace(',', '.')) || 0,
+            maskMoney: (i) => {
+                let v = i.value.replace(/\D/g, "");
+                v = (v / 100).toFixed(2).replace(".", ",");
+                v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+                i.value = "R$ " + v;
             }
         };
 
         const UI = {
-            data: { clientes: [], imoveis: [], visitas: [], funilEtapas: [] },
-            
+            data: { clientes: [], imoveis: [], settings: { comissao: 5 } },
             init: async () => {
                 await DB.init();
                 UI.data.clientes = await DB.getAll('clientes');
                 UI.data.imoveis = await DB.getAll('imoveis');
-                UI.data.visitas = await DB.getAll('visitas');
-                UI.data.funilEtapas = await Storage.getFunilEtapas();
+                const s = await DB.getAll('settings');
+                if (s.length > 0) UI.data.settings = s[0];
                 
-                UI.renderDashboard();
                 document.getElementById('loading').style.display = 'none';
-                document.getElementById('app').style.display = 'flex';
+                document.getElementById('app').style.display = 'block';
+                UI.refresh();
             },
-
-            // MELHORIA: Controle do campo Valor da Venda
-            toggleValorVendaField: (etapaId) => {
-                const group = document.getElementById('group-valor-venda');
-                group.style.display = (etapaId === 'venda') ? 'block' : 'none';
+            refresh: () => {
+                UI.renderDashboard();
+                UI.renderImoveis();
+                UI.renderClientes();
+                UI.renderFunil();
             },
-
-            renderDashboard: () => {
-                document.getElementById('dash-total-imoveis').innerText = UI.data.imoveis.length;
-                document.getElementById('dash-total-clientes').innerText = UI.data.clientes.length;
-                
-                // MELHORIA: Cálculo baseado no valor real informado no cliente
-                const totalVendas = UI.data.clientes
-                    .filter(c => c.etapaFunil === 'venda')
-                    .reduce((acc, curr) => acc + (curr.valorVenda || 0), 0);
-                
-                document.getElementById('dash-vendas').innerText = Utils.formatCurrency(totalVendas);
-                document.getElementById('dash-visitas').innerText = UI.data.visitas.length;
-            },
-
-            renderClientes: (filter = '') => {
-                const list = document.getElementById('clientes-list');
-                const filtered = UI.data.clientes.filter(c => c.nome.toLowerCase().includes(filter.toLowerCase()));
-                list.innerHTML = filtered.map(c => `
-                    <div class="client-card" onclick="App.cliente.edit('${c.id}')">
-                        <div class="client-header">
-                            <span class="client-name">${c.nome}</span>
-                            <span class="badge" style="background:#047857; color:white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem;">
-                                ${UI.data.funilEtapas.find(e => e.id === c.etapaFunil)?.nome || 'Lead'}
-                            </span>
-                        </div>
-                        <div class="client-info">
-                            <div class="client-row"><i class="fab fa-whatsapp"></i> ${c.telefone}</div>
-                            ${c.valorVenda ? `<div class="client-row" style="color:#047857; font-weight:bold">Venda: ${Utils.formatCurrency(c.valorVenda)}</div>` : ''}
-                        </div>
-                    </div>
-                `).join('');
-            },
-
-            renderImoveis: (filter = '') => {
-                const list = document.getElementById('imoveis-list');
-                const filtered = UI.data.imoveis.filter(i => i.titulo.toLowerCase().includes(filter.toLowerCase()));
-                list.innerHTML = filtered.map(i => `
-                    <div class="property-card" onclick="App.imovel.edit('${i.id}')">
-                        <div class="property-content">
-                            <div class="property-title">${i.titulo}</div>
-                            <div class="property-address">${i.endereco}</div>
-                            <div class="property-price">${Utils.formatCurrency(i.precoVenda)}</div>
-                        </div>
-                    </div>
-                `).join('');
-            },
-
             switchTab: (el) => {
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
                 document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
                 el.classList.add('active');
-                const target = el.getAttribute('data-target');
-                document.getElementById(target).classList.add('active');
-                
-                const fab = document.getElementById('main-fab');
-                if(target === 'imoveis-view') { fab.style.display='flex'; fab.onclick = UI.openNewImovel; }
-                else if(target === 'clientes-view') { fab.style.display='flex'; fab.onclick = UI.openNewCliente; }
-                else { fab.style.display='none'; }
-
-                if(target === 'clientes-view') UI.renderClientes();
-                if(target === 'imoveis-view') UI.renderImoveis();
+                document.getElementById(el.getAttribute('data-target')).classList.add('active');
             },
-
-            openNewCliente: () => {
-                const form = document.getElementById('form-cliente');
-                form.reset();
-                document.getElementById('c-id').value = '';
-                document.getElementById('group-valor-venda').style.display = 'none';
-                
-                const etapaSelect = document.getElementById('c-etapa-funil');
-                etapaSelect.innerHTML = UI.data.funilEtapas.map(e => `<option value="${e.id}">${e.nome}</option>`).join('');
-                
-                const imovelSelect = document.getElementById('c-imovel-interesse');
-                imovelSelect.innerHTML = '<option value="">Selecione...</option>' + 
-                    UI.data.imoveis.map(i => `<option value="${i.id}">${i.titulo}</option>`).join('');
-                
-                UI.openModal('cliente');
+            navigate: (target) => {
+                const nav = document.querySelector(`[data-target="${target}-view"]`);
+                if (nav) UI.switchTab(nav);
             },
+            renderDashboard: () => {
+                const totalVendas = UI.data.imoveis
+                    .filter(i => i.status === 'vendido')
+                    .reduce((acc, i) => acc + (i.valorVendaReal || i.precoVenda || 0), 0);
+                
+                // Comissão calculada sobre o valor real das vendas
+                const totalComissao = UI.data.imoveis
+                    .filter(i => i.status === 'vendido')
+                    .reduce((acc, i) => acc + ((i.valorVendaReal || i.precoVenda || 0) * (i.comissao || UI.data.settings.comissao) / 100), 0);
 
-            openNewImovel: () => {
-                document.getElementById('form-imovel').reset();
-                document.getElementById('i-id').value = '';
-                UI.openModal('imovel');
+                document.getElementById('dash-total-imoveis').innerText = UI.data.imoveis.length;
+                document.getElementById('dash-total-clientes').innerText = UI.data.clientes.length;
+                document.getElementById('dash-vendas-valor').innerText = Utils.formatMoney(totalVendas);
+                document.getElementById('dash-comissao').innerText = Utils.formatMoney(totalComissao);
             },
-
+            renderImoveis: (filter = "") => {
+                const list = document.getElementById('imoveis-list');
+                const filtered = UI.data.imoveis.filter(i => i.titulo.toLowerCase().includes(filter.toLowerCase()));
+                list.innerHTML = filtered.map(i => `
+                    <div class="property-card">
+                        <div style="display:flex; justify-content: space-between;">
+                            <strong>${i.titulo}</strong>
+                            <span class="badge ${i.status === 'vendido' ? 'badge-success' : 'bg-blue'}">${i.status.toUpperCase()}</span>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--secondary);">${i.endereco}</p>
+                        <div style="margin-top: 10px;">
+                            <span style="font-size: 0.9rem; color: var(--secondary);">Tabela: ${Utils.formatMoney(i.precoVenda || 0)}</span><br>
+                            ${i.valorVendaReal ? `<strong style="color: var(--success);">Vendido por: ${Utils.formatMoney(i.valorVendaReal)}</strong>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            },
+            renderClientes: (filter = "") => {
+                const list = document.getElementById('clientes-list');
+                const filtered = UI.data.clientes.filter(c => c.nome.toLowerCase().includes(filter.toLowerCase()));
+                list.innerHTML = filtered.map(c => `
+                    <div class="client-card">
+                        <strong>${c.nome}</strong>
+                        <p>${c.telefone}</p>
+                        <div style="display:flex; gap: 10px; margin-top: 10px;">
+                            <button onclick="App.venda.iniciar('${c.id}')" class="badge" style="background: var(--funnel-venda); border:none; cursor:pointer;">CONCLUIR VENDA</button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            renderFunil: () => {
+                const container = document.getElementById('funil-stages-container');
+                const etapas = [
+                    { id: 'lead', nome: 'Lead' },
+                    { id: 'proposta', nome: 'Proposta' },
+                    { id: 'venda', nome: 'Venda Concluída' }
+                ];
+                container.innerHTML = etapas.map(e => `
+                    <div class="funnel-stage">
+                        <strong>${e.nome}</strong>
+                        <div id="stage-${e.id}">
+                            ${UI.data.clientes.filter(c => c.etapaFunil === e.id).map(c => `
+                                <div class="funnel-client-item" onclick="App.venda.iniciar('${c.id}')">
+                                    <span>${c.nome}</span>
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            },
             openModal: (id) => document.getElementById(`overlay-${id}`).classList.add('active'),
             closeModals: () => document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')),
-            navigate: (view) => UI.switchTab(document.querySelector(`[data-target="${view}-view"]`))
-        };
-
-        const App = {
-            cliente: {
-                save: async (e) => {
-                    e.preventDefault();
-                    const etapa = document.getElementById('c-etapa-funil').value;
-                    const cliente = {
-                        id: document.getElementById('c-id').value || Utils.id(),
-                        nome: document.getElementById('c-nome').value,
-                        etapaFunil: etapa,
-                        // MELHORIA: Salva o valor real da venda
-                        valorVenda: etapa === 'venda' ? Utils.parseCurrency(document.getElementById('c-valor-venda').value) : 0,
-                        telefone: document.getElementById('c-telefone').value,
-                        imovelInteresseId: document.getElementById('c-imovel-interesse').value,
-                        observacoes: document.getElementById('c-observacoes').value,
-                        dataCriacao: new Date().toISOString()
-                    };
-                    await DB.put('clientes', cliente);
-                    UI.data.clientes = await DB.getAll('clientes');
-                    Utils.toast('Cliente salvo!');
-                    UI.closeModals();
-                    UI.renderDashboard();
-                    UI.renderClientes();
-                },
-                edit: (id) => {
-                    const c = UI.data.clientes.find(x => x.id === id);
-                    UI.openNewCliente();
-                    setTimeout(() => {
-                        document.getElementById('c-id').value = c.id;
-                        document.getElementById('c-nome').value = c.nome;
-                        document.getElementById('c-etapa-funil').value = c.etapaFunil;
-                        document.getElementById('c-telefone').value = c.telefone;
-                        document.getElementById('c-imovel-interesse').value = c.imovelInteresseId || '';
-                        document.getElementById('c-observacoes').value = c.observacoes || '';
-                        
-                        if(c.etapaFunil === 'venda') {
-                            document.getElementById('group-valor-venda').style.display = 'block';
-                            const val = c.valorVenda || 0;
-                            document.getElementById('c-valor-venda').value = 'R$ ' + val.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-                        }
-                    }, 100);
-                }
-            },
-            imovel: {
-                save: async (e) => {
-                    e.preventDefault();
-                    const imovel = {
-                        id: document.getElementById('i-id').value || Utils.id(),
-                        titulo: document.getElementById('i-titulo').value,
-                        precoVenda: Utils.parseCurrency(document.getElementById('i-preco-venda').value),
-                        endereco: document.getElementById('i-endereco').value,
-                        descricao: document.getElementById('i-descricao').value,
-                        dataCriacao: new Date().toISOString()
-                    };
-                    await DB.put('imoveis', imovel);
-                    UI.data.imoveis = await DB.getAll('imoveis');
-                    Utils.toast('Imóvel salvo!');
-                    UI.closeModals();
-                    UI.renderDashboard();
-                    UI.renderImoveis();
-                }
-            },
-            backup: {
-                exportData: async () => {
-                    const data = {
-                        app: 'ImobiPro',
-                        clientes: UI.data.clientes,
-                        imoveis: UI.data.imoveis,
-                        visitas: UI.data.visitas,
-                        funilEtapas: UI.data.funilEtapas
-                    };
-                    const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `backup_imobipro_${new Date().toISOString().split('T')[0]}.json`;
-                    a.click();
-                },
-                importData: async (input) => {
-                    const file = input.files[0];
-                    if(!file) return;
-                    const text = await file.text();
-                    const data = JSON.parse(text);
-                    if(data.app !== 'ImobiPro') return alert('Arquivo Inválido');
-                    
-                    for(let store of ['clientes', 'imoveis', 'visitas', 'funilEtapas']) {
-                        await DB.clear(store);
-                        if(data[store]) for(let item of data[store]) await DB.put(store, item);
-                    }
-                    location.reload();
-                },
-                clearData: async () => {
-                    if(confirm('Apagar tudo?')) { await indexedDB.deleteDatabase('ImobiProDB'); location.reload(); }
+            openNewImovel: () => {
+                const t = prompt("Título do Apartamento:");
+                const p = prompt("Preço de Tabela (apenas números):");
+                if (t && p) {
+                    const novo = { id: Utils.id(), titulo: t, precoVenda: parseFloat(p), status: 'disponivel', endereco: 'Rua Exemplo' };
+                    UI.data.imoveis.push(novo);
+                    DB.put('imoveis', novo);
+                    UI.refresh();
                 }
             }
         };
 
-        window.onload = UI.init;
+        const App = {
+            venda: {
+                temp: null,
+                iniciar: (clienteId) => {
+                    const cliente = UI.data.clientes.find(c => c.id === clienteId);
+                    const imovel = UI.data.imoveis.find(i => i.id === cliente.imovelInteresseId);
+                    
+                    if (!imovel) {
+                        alert("Por favor, vincule um imóvel de interesse a este cliente antes de concluir a venda.");
+                        return;
+                    }
+                    
+                    App.venda.temp = { cliente, imovel };
+                    document.getElementById('venda-info').innerText = `Venda de: ${imovel.titulo} para ${cliente.nome}`;
+                    document.getElementById('venda-valor-real').value = Utils.formatMoney(imovel.precoVenda || 0);
+                    UI.openModal('venda');
+                },
+                finalizar: async () => {
+                    const valorReal = Utils.parseMoney(document.getElementById('venda-valor-real').value);
+                    if (valorReal <= 0) return alert("Informe um valor de venda válido.");
+
+                    const { cliente, imovel } = App.venda.temp;
+                    
+                    // Atualiza imóvel: valor real da venda negociado
+                    imovel.status = 'vendido';
+                    imovel.valorVendaReal = valorReal;
+                    imovel.dataVenda = new Date().toISOString();
+                    
+                    // Atualiza cliente
+                    cliente.etapaFunil = 'venda';
+                    
+                    await DB.put('imoveis', imovel);
+                    await DB.put('clientes', cliente);
+                    
+                    UI.closeModals();
+                    UI.refresh();
+                    alert("Venda registrada com sucesso! Os relatórios foram atualizados com o valor real.");
+                }
+            }
+        };
+
+        // Dados Iniciais de Teste
+        window.onload = async () => {
+            await UI.init();
+            if (UI.data.imoveis.length === 0) {
+                const iId = Utils.id();
+                const i = { id: iId, titulo: "Apto 302 - Residencial Mar", precoVenda: 500000, status: 'disponivel', endereco: 'Av. Litorânea, 100' };
+                const c = { id: Utils.id(), nome: "Carlos Alberto", telefone: "(82) 9999-0000", etapaFunil: 'proposta', imovelInteresseId: iId };
+                await DB.put('imoveis', i);
+                await DB.put('clientes', c);
+                UI.data.imoveis.push(i);
+                UI.data.clientes.push(c);
+                UI.refresh();
+            }
+        };
     </script>
 </body>
 </html>
